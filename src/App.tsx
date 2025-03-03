@@ -55,7 +55,7 @@ function App() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="max-w-md w-full mx-auto p-6 bg-white rounded-lg shadow-md text-center">
           <CookingPot size={48} className="mx-auto mb-4 text-purple-600" />
-          <h1 className="text-2xl font-bold mb-4 text-purple-600">Hungery</h1>
+          <h1 className="text-2xl font-bold mb-4 text-purple-600">Funger</h1>
           <p className="mb-6 text-gray-600">
             Please connect to Supabase to use this application.
           </p>
@@ -78,7 +78,7 @@ function App() {
         {!session ? (
           <div className="text-center mb-8">
             <CookingPot size={48} className="mx-auto mb-4 text-purple-600" />
-            <h1 className="text-3xl font-bold mb-2 text-purple-600">Hungery</h1>
+            <h1 className="text-3xl font-bold mb-2 text-purple-600">Funger</h1>
             <p className="text-gray-600 mb-8">Track your hunger patterns.</p>
             <Auth onLogin={() => {}} />
           </div>

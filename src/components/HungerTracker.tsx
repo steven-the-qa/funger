@@ -148,7 +148,7 @@ const HungerTracker: React.FC = () => {
   return (
     <div className="max-w-md mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-purple-600">Hungery</h1>
+        <h1 className="text-2xl font-bold text-purple-600">Funger</h1>
         <button
           onClick={handleLogout}
           className="text-sm text-gray-600 hover:text-gray-800"
