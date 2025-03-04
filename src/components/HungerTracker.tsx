@@ -342,18 +342,30 @@ const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
     };
   };
 
-  if (!chartData) {
+  // Check for empty completed records first
+  if (records.filter(r => r.end_time).length === 0) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500">Loading chart data...</p>
+      <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
+        <div className="text-4xl mb-3">🍽️</div>
+        <h3 className="text-purple-600 font-medium text-lg mb-2">Hungry for Some Data?</h3>
+        <p className="text-gray-600">Your chart is feeling a bit empty! Press "I'm Hungry" when those cravings hit, and we'll cook up some delicious insights for you.</p>
+        <p className="mt-2 text-sm text-purple-500">The more hunger sessions you track, the more patterns we can reveal!</p>
       </div>
     );
   }
-
-  if (records.filter(r => r.end_time).length === 0) {
+  
+  // Then check if chart data is still loading
+  if (!chartData) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500">Complete some hunger sessions to see your graph</p>
+      <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
+        <div className="text-4xl mb-3 animate-bounce">🔄</div>
+        <h3 className="text-purple-600 font-medium text-lg mb-2">Cooking Up Your Chart...</h3>
+        <p className="text-gray-600">We're stirring the data pot and preparing your hunger insights.</p>
+        <div className="mt-4">
+          <div className="w-16 h-1 bg-purple-200 rounded-full overflow-hidden">
+            <div className="w-full h-full bg-purple-600 animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }
