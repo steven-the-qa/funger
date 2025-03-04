@@ -5,9 +5,23 @@ import HungerTracker from './components/HungerTracker';
 import { CookingPot } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 
+// Loading component that matches the app's design
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div className="text-center">
+      <CookingPot size={48} className="mx-auto mb-4 text-purple-600 animate-bounce" />
+      <h1 className="text-2xl font-bold mb-2 text-purple-600">Funger</h1>
+      <p className="text-gray-600 mb-4">Loading your hunger data...</p>
+      <div className="w-24 h-1 mx-auto bg-purple-200 rounded-full overflow-hidden">
+        <div className="w-full h-full bg-purple-600 animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   useEffect(() => {
@@ -28,50 +42,32 @@ function App() {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false);
+      setAuthChecked(true);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log('Auth state changed:', event);
         setSession(session);
-        setLoading(false);
+        setAuthChecked(true);
+        
+        // If user signed out, ensure UI reflects that
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
+  // Show the loading screen until auth is checked AND Supabase is connected
+  if (!authChecked || !supabaseConnected) {
+    return <LoadingScreen />;
   }
 
-  if (!supabaseConnected) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="max-w-md w-full mx-auto p-6 bg-white rounded-lg shadow-md text-center">
-          <CookingPot size={48} className="mx-auto mb-4 text-purple-600" />
-          <h1 className="text-2xl font-bold mb-4 text-purple-600">Funger</h1>
-          <p className="mb-6 text-gray-600">
-            Please connect to Supabase to use this application.
-          </p>
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <p className="text-yellow-700">
-              Click the "Connect to Supabase" button in the top right corner to set up your database.
-            </p>
-          </div>
-          <p className="text-sm text-gray-500">
-            This app tracks your hunger patterns and helps you understand your eating habits.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // Render the appropriate UI based on authentication state
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-md mx-auto pt-8">

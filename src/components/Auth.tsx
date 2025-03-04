@@ -33,8 +33,12 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         if (error) throw error;
         onLogin();
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }

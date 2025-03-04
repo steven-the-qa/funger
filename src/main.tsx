@@ -44,9 +44,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Then use it in your main.tsx:
-// <ErrorBoundary><App /></ErrorBoundary>
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

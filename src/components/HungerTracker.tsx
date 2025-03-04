@@ -133,8 +133,17 @@ const HungerTracker: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      } else {
+        // Force a full page reload to clear all state
+        window.location.href = '/';
+      }
+    } catch (err) {
+      console.error('Unexpected error during logout:', err);
+    }
   };
 
   if (loading) {
