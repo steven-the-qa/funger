@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { format, differenceInSeconds } from 'date-fns';
 import { History, BarChart3, Skull, ThumbsUpIcon } from 'lucide-react';
+import LoadingScreen from './LoadingScreen';
 import type { HungerRecord } from '../lib/supabase';
 import type { ChartData, ChartOptions, Point, TooltipItem } from 'chart.js';
 
-const HungerTracker: React.FC = () => {
+interface HungerTrackerProps {
+  onLogout: () => Promise<void>;
+}
+
+const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
   const [isHungry, setIsHungry] = useState(false);
   const [currentSession, setCurrentSession] = useState<{
     id: string;
@@ -132,26 +137,8 @@ const HungerTracker: React.FC = () => {
     return `${minutes} min ${remainingSeconds} sec`;
   };
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error signing out:', error);
-      } else {
-        // Force a full page reload to clear all state
-        window.location.href = '/';
-      }
-    } catch (err) {
-      console.error('Unexpected error during logout:', err);
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
+    return <LoadingScreen message="Loading your hunger data..." />;
   }
 
   return (
@@ -159,7 +146,7 @@ const HungerTracker: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-purple-600">Funger</h1>
         <button
-          onClick={handleLogout}
+          onClick={onLogout}
           className="text-sm text-gray-600 hover:text-gray-800"
         >
           Logout

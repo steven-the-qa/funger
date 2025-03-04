@@ -2,27 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
 import HungerTracker from './components/HungerTracker';
+import LoadingScreen from './components/LoadingScreen';
 import { CookingPot } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
-
-// Loading component that matches the app's design
-const LoadingScreen = () => (
-  <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-    <div className="text-center">
-      <CookingPot size={48} className="mx-auto mb-4 text-purple-600 animate-bounce" />
-      <h1 className="text-2xl font-bold mb-2 text-purple-600">Funger</h1>
-      <p className="text-gray-600 mb-4">Loading your hunger data...</p>
-      <div className="w-24 h-1 mx-auto bg-purple-200 rounded-full overflow-hidden">
-        <div className="w-full h-full bg-purple-600 animate-pulse"></div>
-      </div>
-    </div>
-  </div>
-);
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     // Check if Supabase is connected
@@ -49,21 +37,32 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event);
-        setSession(session);
-        setAuthChecked(true);
         
-        // If user signed out, ensure UI reflects that
         if (event === 'SIGNED_OUT') {
+          // When user signs out, update both states at once to prevent flashing
           setSession(null);
+          setIsLoggingOut(true);
+        } else {
+          setSession(session);
         }
+        
+        setAuthChecked(true);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Export logout function to be used by child components
+  const handleLogout = async () => {
+    // Set logging out flag before calling auth signOut
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+  };
+
   // Show the loading screen until auth is checked AND Supabase is connected
-  if (!authChecked || !supabaseConnected) {
+  // But NOT during logout process
+  if ((!authChecked || !supabaseConnected) && !isLoggingOut) {
     return <LoadingScreen />;
   }
 
@@ -79,7 +78,7 @@ function App() {
             <Auth onLogin={() => {}} />
           </div>
         ) : (
-          <HungerTracker />
+          <HungerTracker onLogout={handleLogout} />
         )}
       </div>
     </div>
