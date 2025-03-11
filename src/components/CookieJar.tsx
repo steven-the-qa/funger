@@ -1,7 +1,8 @@
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { supabase, CookieReward, UserCookieStats, COOKIE_ACHIEVEMENTS } from '../lib/supabase';
-import { Trophy, BarChart } from 'lucide-react';
+import { Trophy, BarChart, Share2, Download, Cookie } from 'lucide-react';
 import type { ChartData, ChartOptions } from 'chart.js';
+import html2canvas from 'html2canvas';
 
 interface CookieJarProps {
   userId: string;
@@ -25,6 +26,11 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
   const [loading, setLoading] = useState(true);
   const [showGraph, setShowGraph] = useState(false);
   const [chartData, setChartData] = useState<ChartData<'line'> | null>(null);
+
+  // New state for sharing feature
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const cookieJarRef = useRef<HTMLDivElement>(null);
 
   const loadCookieData = useCallback(async () => {
     setLoading(true);
@@ -167,6 +173,60 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
     return acc;
   }, {} as Record<string, number>);
 
+  // Add sharing functionality
+  const handleShare = async () => {
+    if (!cookieJarRef.current) return;
+    
+    try {
+      setIsSharing(true);
+      
+      // Generate the image from the cookie jar
+      const canvas = await html2canvas(cookieJarRef.current, {
+        backgroundColor: '#fff8ed', // Light cookie-colored background
+        scale: 2, // Higher quality
+      });
+      
+      // Convert to image URL
+      const imageUrl = canvas.toDataURL('image/png');
+      setShareUrl(imageUrl);
+      
+      // Try using the Web Share API if available
+      if (navigator.share) {
+        // Create a blob from the image
+        const blob = await (await fetch(imageUrl)).blob();
+        const file = new File([blob], 'my-cookie-jar.png', { type: 'image/png' });
+        
+        try {
+          await navigator.share({
+            title: 'My Cookie Collection',
+            text: `I've earned ${stats?.total_cookies || 0} cookies and have a streak of ${stats?.current_streak || 0} days!`,
+            files: [file]
+          });
+        } catch (error) {
+          console.error('Error sharing:', error);
+          // Fallback to showing the share modal
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error creating share image:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+  
+  const handleDownload = () => {
+    if (!shareUrl) return;
+    
+    // Create a download link
+    const link = document.createElement('a');
+    link.href = shareUrl;
+    link.download = 'my-cookie-jar.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!isOpen) return null;
 
   // Cookie growth chart component
@@ -289,7 +349,7 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-purple-600 flex items-center">
-              <span className="mr-2">🍪</span> Cookie Jar
+              <Cookie className="mr-2" size={28} /> Cookie Jar
             </h2>
             <button 
               onClick={onClose}
@@ -326,14 +386,55 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
               {/* Cookie Jar Growth Toggle */}
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-purple-700">Cookie Collection</h3>
-                <button
-                  onClick={() => setShowGraph(!showGraph)}
-                  className="flex items-center text-sm text-purple-600 hover:text-purple-800"
-                >
-                  <BarChart size={16} className="mr-1" />
-                  {showGraph ? 'Hide Graph' : 'Show Growth'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowGraph(!showGraph)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${
+                      showGraph ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    <BarChart size={16} />
+                    {showGraph ? 'Hide Graph' : 'Show Growth'}
+                  </button>
+                  
+                  <button
+                    onClick={handleShare}
+                    disabled={isSharing || cookies.length === 0}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${
+                      isSharing || cookies.length === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                    }`}
+                  >
+                    <Share2 size={16} />
+                    {isSharing ? 'Creating...' : 'Share'}
+                  </button>
+                </div>
               </div>
+
+              {/* Share modal */}
+              {shareUrl && (
+                <div className="mb-6 bg-gray-50 p-4 rounded-md border border-gray-200">
+                  <h3 className="font-medium text-gray-700 mb-2">Share Your Cookie Collection</h3>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Save this image to share your cookie achievements!
+                  </p>
+                  <div className="mb-3 border border-gray-200 rounded-md overflow-hidden">
+                    <img 
+                      src={shareUrl} 
+                      alt="Your cookie collection" 
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md"
+                  >
+                    <Download size={18} />
+                    Download Image
+                  </button>
+                </div>
+              )}
 
               {/* Cookie Growth Chart */}
               {showGraph ? (

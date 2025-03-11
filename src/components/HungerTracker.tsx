@@ -4,6 +4,8 @@ import { format, differenceInSeconds } from 'date-fns';
 import { History, BarChart3, Skull, ThumbsUpIcon, Cookie } from 'lucide-react';
 import LoadingScreen from './LoadingScreen';
 import CookieJar from './CookieJar';
+import TouchGrassTimer from './TouchGrassTimer';
+import Garden from './Garden';
 import type { HungerRecord } from '../lib/supabase';
 import type { ChartData, ChartOptions, Point, TooltipItem } from 'chart.js';
 
@@ -27,6 +29,7 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isCooldown, setIsCooldown] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showGarden, setShowGarden] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -270,6 +273,11 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
     return `${minutes} min ${remainingSeconds} sec`;
   };
 
+  const handleGrassSessionCompleted = () => {
+    // Just a placeholder for now - we could refresh garden data here if needed
+    console.log('Grass session completed!');
+  };
+
   if (loading) {
     return <LoadingScreen message="Loading your hunger data..." />;
   }
@@ -362,6 +370,12 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
             className="flex items-center mr-4 bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded-full"
           >
             <span className="mr-1 text-lg">🍪</span> {cookieCount}
+          </button>
+          <button
+            onClick={() => setShowGarden(true)}
+            className="flex items-center mr-4 bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1 rounded-full"
+          >
+            <span className="mr-1 text-lg">🌼</span> Garden
           </button>
           <button
             onClick={onLogout}
@@ -505,6 +519,20 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
       
       {/* Confetti animation */}
       {showConfetti && <Confetti />}
+
+      <TouchGrassTimer 
+        userId={userId || ''} 
+        onSessionCompleted={handleGrassSessionCompleted} 
+      />
+
+      {/* Garden modal */}
+      {showGarden && userId && (
+        <Garden 
+          userId={userId} 
+          isOpen={showGarden} 
+          onClose={() => setShowGarden(false)} 
+        />
+      )}
     </div>
   );
 };
