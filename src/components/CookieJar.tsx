@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, useCallback, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { supabase, CookieReward, UserCookieStats, COOKIE_ACHIEVEMENTS } from '../lib/supabase';
 import { Trophy, BarChart, Share2, Download, Cookie } from 'lucide-react';
 import type { ChartData, ChartOptions } from 'chart.js';
@@ -30,7 +30,6 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
   // New state for sharing feature
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const cookieJarRef = useRef<HTMLDivElement>(null);
 
   const loadCookieData = useCallback(async () => {
     setLoading(true);
@@ -173,40 +172,258 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
     return acc;
   }, {} as Record<string, number>);
 
-  // Add sharing functionality
+  // Redesigned sharing functionality to focus on achievements
   const handleShare = async () => {
-    if (!cookieJarRef.current) return;
-    
     try {
       setIsSharing(true);
       
-      // Generate the image from the cookie jar
-      const canvas = await html2canvas(cookieJarRef.current, {
-        backgroundColor: '#fff8ed', // Light cookie-colored background
-        scale: 2, // Higher quality
+      // Create a dedicated share card rather than using the ref
+      const shareCard = document.createElement('div');
+      shareCard.style.width = '600px';
+      shareCard.style.padding = '24px';
+      shareCard.style.backgroundColor = '#FFF8ED';
+      shareCard.style.borderRadius = '16px';
+      shareCard.style.fontFamily = 'Arial, sans-serif';
+      shareCard.style.boxSizing = 'border-box';
+      
+      // Add app branding
+      const header = document.createElement('div');
+      header.style.display = 'flex';
+      header.style.alignItems = 'center';
+      header.style.marginBottom = '16px';
+      
+      const title = document.createElement('h2');
+      title.textContent = 'Funger - Cookie Collection';
+      title.style.fontSize = '24px';
+      title.style.fontWeight = 'bold';
+      title.style.color = '#9333EA'; // purple-600
+      title.style.margin = '0';
+      
+      const cookieEmoji = document.createElement('span');
+      cookieEmoji.textContent = '🍪';
+      cookieEmoji.style.fontSize = '32px';
+      cookieEmoji.style.marginRight = '12px';
+      
+      header.appendChild(cookieEmoji);
+      header.appendChild(title);
+      shareCard.appendChild(header);
+      
+      // Add metrics section
+      const metricsContainer = document.createElement('div');
+      metricsContainer.style.display = 'grid';
+      metricsContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      metricsContainer.style.gap = '16px';
+      metricsContainer.style.margin = '24px 0';
+      metricsContainer.style.padding = '16px';
+      metricsContainer.style.backgroundColor = '#F5F3FF'; // purple-50
+      metricsContainer.style.borderRadius = '8px';
+      
+      // Add total cookies
+      const totalCookiesCard = document.createElement('div');
+      totalCookiesCard.style.textAlign = 'center';
+      
+      const totalCookiesLabel = document.createElement('p');
+      totalCookiesLabel.textContent = 'Total Cookies';
+      totalCookiesLabel.style.fontSize = '14px';
+      totalCookiesLabel.style.color = '#7E22CE'; // purple-700
+      totalCookiesLabel.style.margin = '0 0 4px 0';
+      
+      const totalCookiesValue = document.createElement('p');
+      totalCookiesValue.textContent = String(stats?.total_cookies || 0);
+      totalCookiesValue.style.fontSize = '28px';
+      totalCookiesValue.style.fontWeight = 'bold';
+      totalCookiesValue.style.color = '#9333EA'; // purple-600
+      totalCookiesValue.style.margin = '0';
+      
+      totalCookiesCard.appendChild(totalCookiesLabel);
+      totalCookiesCard.appendChild(totalCookiesValue);
+      metricsContainer.appendChild(totalCookiesCard);
+      
+      // Add current streak
+      const currentStreakCard = document.createElement('div');
+      currentStreakCard.style.textAlign = 'center';
+      
+      const currentStreakLabel = document.createElement('p');
+      currentStreakLabel.textContent = 'Current Streak';
+      currentStreakLabel.style.fontSize = '14px';
+      currentStreakLabel.style.color = '#7E22CE'; // purple-700
+      currentStreakLabel.style.margin = '0 0 4px 0';
+      
+      const currentStreakValue = document.createElement('p');
+      currentStreakValue.textContent = `${stats?.current_streak || 0} 🔥`;
+      currentStreakValue.style.fontSize = '28px';
+      currentStreakValue.style.fontWeight = 'bold';
+      currentStreakValue.style.color = '#9333EA'; // purple-600
+      currentStreakValue.style.margin = '0';
+      
+      currentStreakCard.appendChild(currentStreakLabel);
+      currentStreakCard.appendChild(currentStreakValue);
+      metricsContainer.appendChild(currentStreakCard);
+      
+      // Add longest streak
+      const longestStreakCard = document.createElement('div');
+      longestStreakCard.style.textAlign = 'center';
+      
+      const longestStreakLabel = document.createElement('p');
+      longestStreakLabel.textContent = 'Longest Streak';
+      longestStreakLabel.style.fontSize = '14px';
+      longestStreakLabel.style.color = '#7E22CE'; // purple-700
+      longestStreakLabel.style.margin = '0 0 4px 0';
+      
+      const longestStreakValue = document.createElement('p');
+      longestStreakValue.textContent = String(stats?.longest_streak || 0);
+      longestStreakValue.style.fontSize = '28px';
+      longestStreakValue.style.fontWeight = 'bold';
+      longestStreakValue.style.color = '#9333EA'; // purple-600
+      longestStreakValue.style.margin = '0';
+      
+      longestStreakCard.appendChild(longestStreakLabel);
+      longestStreakCard.appendChild(longestStreakValue);
+      metricsContainer.appendChild(longestStreakCard);
+      
+      shareCard.appendChild(metricsContainer);
+      
+      // Find most recent achievement
+      const unlockedAchievements = COOKIE_ACHIEVEMENTS.filter(achievement => {
+        if (achievement.isStreak) {
+          return (stats?.longest_streak || 0) >= achievement.requirement;
+        } else {
+          return (stats?.total_cookies || 0) >= achievement.requirement;
+        }
+        return false;
       });
+      
+      // Sort by requirement (highest first) to get the most impressive achievement
+      const mostImpressiveAchievement = [...unlockedAchievements].sort((a, b) => 
+        b.requirement - a.requirement
+      )[0];
+      
+      // Add achievement highlight
+      if (mostImpressiveAchievement) {
+        const achievementContainer = document.createElement('div');
+        achievementContainer.style.backgroundColor = '#FFFBEB'; // amber-50
+        achievementContainer.style.border = '2px solid #FCD34D'; // amber-300
+        achievementContainer.style.borderRadius = '8px';
+        achievementContainer.style.padding = '20px';
+        achievementContainer.style.marginBottom = '24px';
+        achievementContainer.style.display = 'flex';
+        achievementContainer.style.alignItems = 'center';
+        
+        const achievementEmoji = document.createElement('div');
+        achievementEmoji.textContent = '🏆';
+        achievementEmoji.style.fontSize = '48px';
+        achievementEmoji.style.marginRight = '16px';
+        
+        const achievementContent = document.createElement('div');
+        
+        const achievementTitle = document.createElement('h3');
+        achievementTitle.textContent = mostImpressiveAchievement.name;
+        achievementTitle.style.margin = '0 0 8px 0';
+        achievementTitle.style.fontSize = '18px';
+        achievementTitle.style.fontWeight = 'bold';
+        achievementTitle.style.color = '#B45309'; // amber-700
+        
+        const achievementDesc = document.createElement('p');
+        achievementDesc.textContent = mostImpressiveAchievement.description;
+        achievementDesc.style.margin = '0';
+        achievementDesc.style.fontSize = '14px';
+        achievementDesc.style.color = '#92400E'; // amber-800
+        
+        achievementContent.appendChild(achievementTitle);
+        achievementContent.appendChild(achievementDesc);
+        
+        achievementContainer.appendChild(achievementEmoji);
+        achievementContainer.appendChild(achievementContent);
+        
+        shareCard.appendChild(achievementContainer);
+      }
+      
+      // Add cookie gallery preview
+      const cookieGallery = document.createElement('div');
+      cookieGallery.style.marginTop = '20px';
+      
+      // Add header for cookies
+      const cookiesHeader = document.createElement('h3');
+      cookiesHeader.textContent = 'My Cookie Collection';
+      cookiesHeader.style.margin = '0 0 12px 0';
+      cookiesHeader.style.fontSize = '16px';
+      cookiesHeader.style.fontWeight = '600';
+      cookiesHeader.style.color = '#7E22CE'; // purple-700
+      
+      cookieGallery.appendChild(cookiesHeader);
+      
+      // Create cookie grid
+      const cookieGrid = document.createElement('div');
+      cookieGrid.style.display = 'grid';
+      cookieGrid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+      cookieGrid.style.gap = '8px';
+      
+      // Get cookie counts by type
+      const cookieCounts: Record<string, number> = {};
+      cookies.forEach(cookie => {
+        const type = cookie.cookie_type;
+        cookieCounts[type] = (cookieCounts[type] || 0) + 1;
+      });
+      
+      // Show one of each type, with count
+      Object.entries(cookieCounts).forEach(([type, count]) => {
+        if (count > 0) {
+          const cookieItem = document.createElement('div');
+          cookieItem.style.display = 'flex';
+          cookieItem.style.flexDirection = 'column';
+          cookieItem.style.alignItems = 'center';
+          cookieItem.style.backgroundColor = '#FEF3C7'; // amber-100
+          cookieItem.style.borderRadius = '8px';
+          cookieItem.style.padding = '8px';
+          
+          const cookieEmoji = document.createElement('div');
+          cookieEmoji.textContent = COOKIE_EMOJIS[type] || '🍪';
+          cookieEmoji.style.fontSize = '24px';
+          
+          const cookieCount = document.createElement('div');
+          cookieCount.textContent = `x${count}`;
+          cookieCount.style.marginTop = '4px';
+          cookieCount.style.fontSize = '12px';
+          cookieCount.style.fontWeight = '600';
+          cookieCount.style.color = '#B45309'; // amber-700
+          
+          cookieItem.appendChild(cookieEmoji);
+          cookieItem.appendChild(cookieCount);
+          cookieGrid.appendChild(cookieItem);
+        }
+      });
+      
+      cookieGallery.appendChild(cookieGrid);
+      shareCard.appendChild(cookieGallery);
+      
+      // Add app link at bottom
+      const footer = document.createElement('div');
+      footer.style.marginTop = '24px';
+      footer.style.textAlign = 'center';
+      footer.style.fontSize = '12px';
+      footer.style.color = '#6B7280'; // gray-500
+      footer.textContent = 'Track your hunger patterns with Funger - funger.netlify.app';
+      
+      shareCard.appendChild(footer);
+      
+      // Temporarily add to body but make invisible
+      shareCard.style.position = 'absolute';
+      shareCard.style.left = '-9999px';
+      document.body.appendChild(shareCard);
+      
+      // Generate image
+      const canvas = await html2canvas(shareCard, {
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      });
+      
+      // Remove temporary element
+      document.body.removeChild(shareCard);
       
       // Convert to image URL
       const imageUrl = canvas.toDataURL('image/png');
       setShareUrl(imageUrl);
-      
-      // Try using the Web Share API if available
-      if (navigator.share) {
-        // Create a blob from the image
-        const blob = await (await fetch(imageUrl)).blob();
-        const file = new File([blob], 'my-cookie-jar.png', { type: 'image/png' });
-        
-        try {
-          await navigator.share({
-            title: 'My Cookie Collection',
-            text: `I've earned ${stats?.total_cookies || 0} cookies and have a streak of ${stats?.current_streak || 0} days!`,
-            files: [file]
-          });
-        } catch (error) {
-          console.error('Error sharing:', error);
-          // Fallback to showing the share modal
-        }
-      }
       
     } catch (error) {
       console.error('Error creating share image:', error);

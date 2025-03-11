@@ -27,10 +27,10 @@ interface GardenStats {
 // Plant types in order of upgrade path
 const PLANT_TYPES = [
   { type: 'flower', label: 'Flower', emoji: '🌼', description: 'A simple flower' },
-  { type: 'bush', label: 'Bush', emoji: '🌿', description: 'A small bush', cost: 5 },
-  { type: 'shrub', label: 'Flowering Shrub', emoji: '🌳', description: 'A larger flowering shrub', cost: 10 },
-  { type: 'tree', label: 'Small Tree', emoji: '🌲', description: 'A small tree', cost: 15 },
-  { type: 'large_tree', label: 'Large Tree', emoji: '🌴', description: 'A majestic large tree', cost: 20 },
+  { type: 'veggie', label: 'Vegetable', emoji: '🥕', description: 'A nutritious vegetable', cost: 5 },
+  { type: 'fruit', label: 'Fruit', emoji: '🍓', description: 'A delicious fruit', cost: 10 },
+  { type: 'tree', label: 'Tree', emoji: '🌴', description: 'A majestic tree', cost: 15 },
+  { type: 'luck', label: 'Lucky Charm', emoji: '🍀', description: 'A rare lucky find', cost: 20 },
 ];
 
 // Variants for each type
@@ -41,21 +41,23 @@ const PLANT_VARIANTS: Record<string, Array<{name: string, emoji: string}>> = {
     { name: 'tulip', emoji: '🌷' },
     { name: 'sunflower', emoji: '🌻' },
   ],
-  bush: [
-    { name: 'herb', emoji: '🌿' },
-    { name: 'leafy', emoji: '☘️' },
+  veggie: [
+    { name: 'carrot', emoji: '🥕' },
+    { name: 'onion', emoji: '🧅' },
+    { name: 'potato', emoji: '🥔' },
   ],
-  shrub: [
-    { name: 'blossom', emoji: '🌳' },
-    { name: 'berries', emoji: '🍃' },
+  fruit: [
+    { name: 'strawberry', emoji: '🍓' },
+    { name: 'kiwi', emoji: '🥝' },
+    { name: 'watermelon', emoji: '🍉' },
   ],
   tree: [
+    { name: 'palm', emoji: '🌴' },
     { name: 'pine', emoji: '🌲' },
     { name: 'deciduous', emoji: '🌳' },
   ],
-  large_tree: [
-    { name: 'palm', emoji: '🌴' },
-    { name: 'redwood', emoji: '🌲' },
+  luck: [
+    { name: 'four-leaf-clover', emoji: '🍀' },
   ],
 };
 
@@ -211,39 +213,288 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
     return plantVariant ? plantVariant.emoji : '🌱';
   };
   
+  // Improved sharing functionality
   const handleShare = async () => {
-    if (!gardenRef.current) return;
-    
     try {
       setIsSharing(true);
       
-      // Generate the image from the garden grid
-      const canvas = await html2canvas(gardenRef.current, {
-        backgroundColor: '#f0fdf4', // Light green background
-        scale: 2, // Higher quality
+      // Create a dedicated share card
+      const shareCard = document.createElement('div');
+      shareCard.style.width = '600px';
+      shareCard.style.padding = '24px';
+      shareCard.style.backgroundColor = '#F0FDF4'; // green-50
+      shareCard.style.borderRadius = '16px';
+      shareCard.style.fontFamily = 'Arial, sans-serif';
+      shareCard.style.boxSizing = 'border-box';
+      
+      // Add app branding
+      const header = document.createElement('div');
+      header.style.display = 'flex';
+      header.style.alignItems = 'center';
+      header.style.marginBottom = '16px';
+      
+      const title = document.createElement('h2');
+      title.textContent = 'Funger - My Garden';
+      title.style.fontSize = '24px';
+      title.style.fontWeight = 'bold';
+      title.style.color = '#15803D'; // green-700
+      title.style.margin = '0';
+      
+      const gardenEmoji = document.createElement('span');
+      gardenEmoji.textContent = '🌱';
+      gardenEmoji.style.fontSize = '32px';
+      gardenEmoji.style.marginRight = '12px';
+      
+      header.appendChild(gardenEmoji);
+      header.appendChild(title);
+      shareCard.appendChild(header);
+      
+      // Add metrics section
+      const metricsContainer = document.createElement('div');
+      metricsContainer.style.display = 'grid';
+      metricsContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      metricsContainer.style.gap = '16px';
+      metricsContainer.style.margin = '24px 0';
+      metricsContainer.style.padding = '16px';
+      metricsContainer.style.backgroundColor = '#DCFCE7'; // green-100
+      metricsContainer.style.borderRadius = '8px';
+      
+      // Sessions completed
+      const sessionsCard = document.createElement('div');
+      sessionsCard.style.textAlign = 'center';
+      
+      const sessionsLabel = document.createElement('p');
+      sessionsLabel.textContent = 'Sessions Completed';
+      sessionsLabel.style.fontSize = '14px';
+      sessionsLabel.style.color = '#166534'; // green-800
+      sessionsLabel.style.margin = '0 0 4px 0';
+      
+      const sessionsValue = document.createElement('p');
+      sessionsValue.textContent = String(gardenStats?.total_sessions_completed || 0);
+      sessionsValue.style.fontSize = '28px';
+      sessionsValue.style.fontWeight = 'bold';
+      sessionsValue.style.color = '#15803D'; // green-700
+      sessionsValue.style.margin = '0';
+      
+      sessionsCard.appendChild(sessionsLabel);
+      sessionsCard.appendChild(sessionsValue);
+      metricsContainer.appendChild(sessionsCard);
+      
+      // Flowers earned
+      const flowersCard = document.createElement('div');
+      flowersCard.style.textAlign = 'center';
+      
+      const flowersLabel = document.createElement('p');
+      flowersLabel.textContent = 'Flowers Earned';
+      flowersLabel.style.fontSize = '14px';
+      flowersLabel.style.color = '#166534'; // green-800
+      flowersLabel.style.margin = '0 0 4px 0';
+      
+      const flowersValue = document.createElement('p');
+      flowersValue.textContent = String(gardenStats?.total_flowers_earned || 0);
+      flowersValue.style.fontSize = '28px';
+      flowersValue.style.fontWeight = 'bold';
+      flowersValue.style.color = '#15803D'; // green-700
+      flowersValue.style.margin = '0';
+      
+      flowersCard.appendChild(flowersLabel);
+      flowersCard.appendChild(flowersValue);
+      metricsContainer.appendChild(flowersCard);
+      
+      // Flowers available
+      const availableCard = document.createElement('div');
+      availableCard.style.textAlign = 'center';
+      
+      const availableLabel = document.createElement('p');
+      availableLabel.textContent = 'Available Flowers';
+      availableLabel.style.fontSize = '14px';
+      availableLabel.style.color = '#166534'; // green-800
+      availableLabel.style.margin = '0 0 4px 0';
+      
+      const availableValue = document.createElement('p');
+      availableValue.textContent = String(gardenStats?.flowers_available || 0);
+      availableValue.style.fontSize = '28px';
+      availableValue.style.fontWeight = 'bold';
+      availableValue.style.color = '#15803D'; // green-700
+      availableValue.style.margin = '0';
+      
+      availableCard.appendChild(availableLabel);
+      availableCard.appendChild(availableValue);
+      metricsContainer.appendChild(availableCard);
+      
+      shareCard.appendChild(metricsContainer);
+      
+      // Add garden highlight - most impressive plant
+      // Sort plants by type importance
+      const plantTypeRanking: Record<string, number> = {
+        'flower': 1,
+        'veggie': 2,
+        'fruit': 3,
+        'tree': 4,
+        'luck': 5
+      };
+      
+      const sortedPlants = [...gardenItems].sort((a, b) => {
+        return (plantTypeRanking[b.plant_type] || 0) - (plantTypeRanking[a.plant_type] || 0);
       });
+      
+      const bestPlant = sortedPlants[0];
+      
+      if (bestPlant) {
+        const plantInfo = PLANT_TYPES.find(p => p.type === bestPlant.plant_type);
+        
+        // Create achievement-like container for best plant
+        const achievementContainer = document.createElement('div');
+        achievementContainer.style.backgroundColor = '#ECFDF5'; // green-50
+        achievementContainer.style.border = '2px solid #6EE7B7'; // green-300
+        achievementContainer.style.borderRadius = '8px';
+        achievementContainer.style.padding = '20px';
+        achievementContainer.style.marginBottom = '24px';
+        achievementContainer.style.display = 'flex';
+        achievementContainer.style.alignItems = 'center';
+        
+        // Get the plant emoji
+        const variantList = PLANT_VARIANTS[bestPlant.plant_type] || [];
+        const plantVariant = variantList.find(v => v.name === bestPlant.plant_variant);
+        const plantEmoji = plantVariant ? plantVariant.emoji : '🌱';
+        
+        const emojiEl = document.createElement('div');
+        emojiEl.textContent = plantEmoji;
+        emojiEl.style.fontSize = '48px';
+        emojiEl.style.marginRight = '16px';
+        
+        const achievementContent = document.createElement('div');
+        
+        const achievementTitle = document.createElement('h3');
+        achievementTitle.textContent = `${plantInfo?.label || 'Plant'} Master`;
+        achievementTitle.style.margin = '0 0 8px 0';
+        achievementTitle.style.fontSize = '18px';
+        achievementTitle.style.fontWeight = 'bold';
+        achievementTitle.style.color = '#065F46'; // green-800
+        
+        const achievementDesc = document.createElement('p');
+        achievementDesc.textContent = `You've grown a beautiful ${plantInfo?.label.toLowerCase() || 'plant'} in your garden!`;
+        achievementDesc.style.margin = '0';
+        achievementDesc.style.fontSize = '14px';
+        achievementDesc.style.color = '#047857'; // green-700
+        
+        achievementContent.appendChild(achievementTitle);
+        achievementContent.appendChild(achievementDesc);
+        
+        achievementContainer.appendChild(emojiEl);
+        achievementContainer.appendChild(achievementContent);
+        
+        shareCard.appendChild(achievementContainer);
+      }
+      
+      // Add garden preview
+      const gardenPreview = document.createElement('div');
+      gardenPreview.style.marginTop = '20px';
+      
+      // Add header for garden
+      const gardenHeader = document.createElement('h3');
+      gardenHeader.textContent = 'My Garden';
+      gardenHeader.style.margin = '0 0 12px 0';
+      gardenHeader.style.fontSize = '16px';
+      gardenHeader.style.fontWeight = '600';
+      gardenHeader.style.color = '#166534'; // green-800
+      
+      gardenPreview.appendChild(gardenHeader);
+      
+      // Create garden grid
+      const gardenGrid = document.createElement('div');
+      gardenGrid.style.display = 'grid';
+      gardenGrid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+      gardenGrid.style.gap = '8px';
+      gardenGrid.style.backgroundColor = '#D1FAE5'; // green-100
+      gardenGrid.style.padding = '8px';
+      gardenGrid.style.borderRadius = '8px';
+      
+      // Populate the grid with plants
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const plant = gardenItems.find(
+            item => item.position_x === x && item.position_y === y
+          );
+          
+          const cell = document.createElement('div');
+          cell.style.aspectRatio = '1/1';
+          cell.style.display = 'flex';
+          cell.style.alignItems = 'center';
+          cell.style.justifyContent = 'center';
+          cell.style.fontSize = '24px';
+          cell.style.backgroundColor = plant ? '#A7F3D0' : '#ECFDF5'; // green-200 or green-50
+          cell.style.borderRadius = '4px';
+          
+          if (plant) {
+            cell.textContent = getPlantEmoji(plant.plant_type, plant.plant_variant);
+          }
+          
+          gardenGrid.appendChild(cell);
+        }
+      }
+      
+      gardenPreview.appendChild(gardenGrid);
+      shareCard.appendChild(gardenPreview);
+      
+      // Plant variety summary
+      const plantSummary = document.createElement('div');
+      plantSummary.style.marginTop = '16px';
+      
+      // Count types of plants
+      const plantCounts: Record<string, number> = {};
+      gardenItems.forEach(item => {
+        plantCounts[item.plant_type] = (plantCounts[item.plant_type] || 0) + 1;
+      });
+      
+      // Create summary text
+      const summaryText = document.createElement('p');
+      summaryText.style.fontSize = '14px';
+      summaryText.style.color = '#374151'; // gray-700
+      summaryText.style.margin = '0';
+      
+      const plantTypeTexts: string[] = [];
+      Object.entries(plantCounts).forEach(([type, count]) => {
+        const plantInfo = PLANT_TYPES.find(p => p.type === type);
+        if (plantInfo) {
+          plantTypeTexts.push(`${count} ${plantInfo.label.toLowerCase()}${count > 1 ? 's' : ''}`);
+        }
+      });
+      
+      if (plantTypeTexts.length > 0) {
+        summaryText.textContent = `My garden has: ${plantTypeTexts.join(', ')}`;
+        plantSummary.appendChild(summaryText);
+        shareCard.appendChild(plantSummary);
+      }
+      
+      // Add app link at bottom
+      const footer = document.createElement('div');
+      footer.style.marginTop = '24px';
+      footer.style.textAlign = 'center';
+      footer.style.fontSize = '12px';
+      footer.style.color = '#6B7280'; // gray-500
+      footer.textContent = 'Touch grass and grow your garden with Funger - funger.netlify.app';
+      
+      shareCard.appendChild(footer);
+      
+      // Temporarily add to body but make invisible
+      shareCard.style.position = 'absolute';
+      shareCard.style.left = '-9999px';
+      document.body.appendChild(shareCard);
+      
+      // Generate image
+      const canvas = await html2canvas(shareCard, {
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      });
+      
+      // Remove temporary element
+      document.body.removeChild(shareCard);
       
       // Convert to image URL
       const imageUrl = canvas.toDataURL('image/png');
       setShareUrl(imageUrl);
-      
-      // Try using the Web Share API if available
-      if (navigator.share) {
-        // Create a blob from the image
-        const blob = await (await fetch(imageUrl)).blob();
-        const file = new File([blob], 'my-garden.png', { type: 'image/png' });
-        
-        try {
-          await navigator.share({
-            title: 'My Touch Grass Garden',
-            text: `I've completed ${gardenStats?.total_sessions_completed || 0} screen breaks and grown ${gardenItems.length} plants in my virtual garden!`,
-            files: [file]
-          });
-        } catch (error) {
-          console.error('Error sharing:', error);
-          // Fallback to showing the share modal
-        }
-      }
       
     } catch (error) {
       console.error('Error creating share image:', error);
