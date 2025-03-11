@@ -506,9 +506,43 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
   const handleDownload = () => {
     if (!shareUrl) return;
     
-    // Create a download link
+    // Check if this is a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile && navigator.share) {
+      // Use Web Share API on mobile if available - this typically gives better options
+      fetch(shareUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'my-garden.png', { type: 'image/png' });
+          
+          navigator.share({
+            files: [file],
+            title: 'My Garden',
+            text: 'Check out my garden in Funger!'
+          }).catch(error => {
+            console.error('Error sharing:', error);
+            // Fall back to traditional download if sharing fails
+            performDownload();
+          });
+        });
+    } else {
+      // For desktop or if Web Share API isn't available
+      performDownload();
+    }
+  };
+  
+  const performDownload = () => {
+    // For iOS specifically, we need a different approach
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent) && shareUrl) {
+      // Open image in new tab - iOS users can then long-press to save to camera roll
+      window.open(shareUrl, '_blank');
+      return;
+    }
+    
+    // Traditional download for other devices
     const link = document.createElement('a');
-    link.href = shareUrl;
+    link.href = shareUrl || '';
     link.download = 'my-garden.png';
     document.body.appendChild(link);
     link.click();
