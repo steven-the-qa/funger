@@ -473,7 +473,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
       footer.style.textAlign = 'center';
       footer.style.fontSize = '12px';
       footer.style.color = '#6B7280'; // gray-500
-      footer.textContent = 'Touch grass and grow your garden with Funger - funger.netlify.app';
+      footer.textContent = '30 minutes of fresh air = 1 fake flower 🌱 funger.netlify.app';
       
       shareCard.appendChild(footer);
       

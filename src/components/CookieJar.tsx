@@ -398,11 +398,11 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
       
       // Add app link at bottom
       const footer = document.createElement('div');
-      footer.style.marginTop = '24px';
+      footer.style.marginTop = '16px';
       footer.style.textAlign = 'center';
       footer.style.fontSize = '12px';
       footer.style.color = '#6B7280'; // gray-500
-      footer.textContent = 'Track your hunger patterns with Funger - funger.netlify.app';
+      footer.textContent = 'Conquer your cravings, one cookie at a time! 🍪 funger.netlify.app';
       
       shareCard.appendChild(footer);
       
