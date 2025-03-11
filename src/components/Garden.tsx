@@ -648,9 +648,9 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
                   
                   <button
                     onClick={toggleShare}
-                    disabled={isSharing || gardenItems.length === 0}
+                    disabled={isSharing || (gardenItems.length === 0 && (gardenStats?.flowers_available || 0) === 0)}
                     className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
-                      isSharing || gardenItems.length === 0
+                      isSharing || (gardenItems.length === 0 && (gardenStats?.flowers_available || 0) === 0)
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                         : shareUrl 
                           ? 'bg-red-100 hover:bg-red-200 text-red-700'
