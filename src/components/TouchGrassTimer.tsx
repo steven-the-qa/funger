@@ -12,6 +12,7 @@ const TouchGrassTimer: React.FC<TouchGrassTimerProps> = ({ userId, onSessionComp
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   // Check for any active sessions on component mount
   useEffect(() => {
@@ -102,8 +103,13 @@ const TouchGrassTimer: React.FC<TouchGrassTimerProps> = ({ userId, onSessionComp
   };
 
   const startSession = async () => {
+    if (isStarting || activeSession) return;
+    
     try {
+      setIsStarting(true);
       const startTime = new Date();
+      
+      setTimeRemaining(30 * 60);
       
       const { data, error } = await supabase
         .from('grass_sessions')
@@ -124,11 +130,13 @@ const TouchGrassTimer: React.FC<TouchGrassTimerProps> = ({ userId, onSessionComp
           id: data[0].id,
           startTime,
         });
-        setTimeRemaining(30 * 60); // 30 minutes in seconds
         setIsCompleted(false);
       }
     } catch (error) {
       console.error('Error starting touch grass session:', error);
+      setTimeRemaining(null);
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -179,7 +187,7 @@ const TouchGrassTimer: React.FC<TouchGrassTimerProps> = ({ userId, onSessionComp
       {showCelebration && <Celebration />}
       
       <div className="flex flex-col items-center">
-        {activeSession ? (
+        {activeSession || timeRemaining ? (
           <>
             <div className="text-center mb-4">
               <p className="text-lg font-medium text-gray-700">Time to touch some grass!</p>
@@ -222,10 +230,24 @@ const TouchGrassTimer: React.FC<TouchGrassTimerProps> = ({ userId, onSessionComp
             </div>
             <button
               onClick={startSession}
-              className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-full text-lg font-medium transition-colors shadow-md"
+              disabled={isStarting}
+              className={`flex items-center justify-center gap-2 ${
+                isStarting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white py-3 px-6 rounded-full text-lg font-medium transition-colors shadow-md`}
             >
-              <Timer size={24} />
-              Start 30-Min Break
+              {isStarting ? (
+                <>
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Timer size={24} />
+                  Start 30-Min Break
+                </>
+              )}
             </button>
           </>
         )}

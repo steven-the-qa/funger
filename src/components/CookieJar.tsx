@@ -478,6 +478,18 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
     document.body.removeChild(link);
   };
 
+  // Toggle share image visibility
+  const toggleShare = async () => {
+    if (shareUrl) {
+      // If image is already showing, just hide it
+      setShareUrl(null);
+      return;
+    }
+    
+    // Otherwise, generate the image
+    await handleShare();
+  };
+
   if (!isOpen) return null;
 
   // Cookie growth chart component
@@ -649,16 +661,18 @@ const CookieJar: React.FC<CookieJarProps> = ({ userId, onClose, isOpen }) => {
                   </button>
                   
                   <button
-                    onClick={handleShare}
+                    onClick={toggleShare}
                     disabled={isSharing || cookies.length === 0}
                     className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${
                       isSharing || cookies.length === 0
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                        : shareUrl
+                          ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                          : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                     }`}
                   >
                     <Share2 size={16} />
-                    {isSharing ? 'Creating...' : 'Share'}
+                    {isSharing ? 'Creating...' : shareUrl ? 'Hide Image' : 'Share'}
                   </button>
                 </div>
               </div>

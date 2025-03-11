@@ -413,9 +413,17 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
       // Populate the grid with plants
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
+          const index = y * GRID_SIZE + x;
           const plant = gardenItems.find(
             item => item.position_x === x && item.position_y === y
           );
+          
+          // Calculate which cells should show available flowers
+          const occupiedCells = gardenItems.length;
+          const flowerIndex = index - occupiedCells;
+          const showIndividualFlower = !plant && 
+            flowerIndex >= 0 &&
+            flowerIndex < (gardenStats?.flowers_available || 0);
           
           const cell = document.createElement('div');
           cell.style.aspectRatio = '1/1';
@@ -423,11 +431,23 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
           cell.style.alignItems = 'center';
           cell.style.justifyContent = 'center';
           cell.style.fontSize = '24px';
-          cell.style.backgroundColor = plant ? '#A7F3D0' : '#ECFDF5'; // green-200 or green-50
+          
+          // Different background colors for plants, flowers, and empty cells
+          if (plant) {
+            cell.style.backgroundColor = '#A7F3D0'; // green-200 for plants
+          } else if (showIndividualFlower) {
+            cell.style.backgroundColor = '#FEF3C7'; // amber-100 for flowers
+          } else {
+            cell.style.backgroundColor = '#ECFDF5'; // green-50 for empty cells
+          }
+          
           cell.style.borderRadius = '4px';
           
           if (plant) {
             cell.textContent = getPlantEmoji(plant.plant_type, plant.plant_variant);
+          } else if (showIndividualFlower) {
+            const flowerVariants = PLANT_VARIANTS.flower;
+            cell.textContent = flowerVariants[flowerIndex % flowerVariants.length].emoji;
           }
           
           gardenGrid.appendChild(cell);
@@ -549,6 +569,18 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
     document.body.removeChild(link);
   };
   
+  // Inside the component, add a handler to toggle the share image
+  const toggleShare = async () => {
+    if (shareUrl) {
+      // If image is already showing, just hide it
+      setShareUrl(null);
+      return;
+    }
+    
+    // Otherwise, generate the image
+    await handleShare();
+  };
+  
   // Modal backdrop
   if (!isOpen) return null;
   
@@ -615,16 +647,18 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
                   </button>
                   
                   <button
-                    onClick={handleShare}
+                    onClick={toggleShare}
                     disabled={isSharing || gardenItems.length === 0}
-                    className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium ${
+                    className={`flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
                       isSharing || gardenItems.length === 0
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                        : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                        : shareUrl 
+                          ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                          : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                     }`}
                   >
                     <Share2 size={18} />
-                    {isSharing ? 'Creating...' : 'Share Garden'}
+                    {isSharing ? 'Creating...' : shareUrl ? 'Hide Image' : 'Share Garden'}
                   </button>
                 </div>
               </div>
@@ -733,20 +767,37 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
                     {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
                       const x = index % GRID_SIZE;
                       const y = Math.floor(index / GRID_SIZE);
+                      
+                      // First check for planted items
                       const plant = gardenItems.find(
                         item => item.position_x === x && item.position_y === y
                       );
+                      
+                      // Calculate total cells already occupied by planted items
+                      const occupiedCells = gardenItems.length;
+                      
+                      // For cells that don't have a planted item, show individual flowers if available
+                      // We'll show flowers in the first empty cells after any planted items
+                      const flowerIndex = index - occupiedCells;
+                      const showIndividualFlower = !plant && 
+                        gardenStats && 
+                        flowerIndex >= 0 &&
+                        flowerIndex < (gardenStats.flowers_available || 0);
                       
                       return (
                         <div 
                           key={index}
                           className={`aspect-square flex items-center justify-center text-2xl rounded-md ${
-                            plant ? 'bg-green-100' : 'bg-green-50 border border-dashed border-green-200'
+                            plant ? 'bg-green-100' : showIndividualFlower ? 'bg-amber-50' : 'bg-green-50 border border-dashed border-green-200'
                           }`}
                         >
                           {plant ? (
                             <span title={`${plant.plant_type} - ${plant.plant_variant}`}>
                               {getPlantEmoji(plant.plant_type, plant.plant_variant)}
+                            </span>
+                          ) : showIndividualFlower ? (
+                            <span title="Available Flower">
+                              {PLANT_VARIANTS.flower[flowerIndex % PLANT_VARIANTS.flower.length].emoji}
                             </span>
                           ) : null}
                         </div>
