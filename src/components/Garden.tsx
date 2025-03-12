@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Flower, LeafyGreen, ArrowUpCircle, Info, Share2, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { useOrnaments, getOrnamentDetails } from '../lib/useOrnaments';
 
 interface GardenProps {
   userId: string;
@@ -13,6 +14,13 @@ interface GardenItem {
   id: string;
   plant_type: string;
   plant_variant: string;
+  position_x: number;
+  position_y: number;
+}
+
+interface GardenOrnament {
+  id: string;
+  ornament_type: string;
   position_x: number;
   position_y: number;
 }
@@ -61,8 +69,18 @@ const PLANT_VARIANTS: Record<string, Array<{name: string, emoji: string}>> = {
   ],
 };
 
+// Garden ornament types
+const GARDEN_ORNAMENTS: Record<string, {emoji: string, description: string}> = {
+  'flamingo': { emoji: '🦩', description: 'A fancy flamingo' },
+  'rock': { emoji: '🪨', description: 'A decorative rock' },
+  'gnome': { emoji: '🧙‍♂️', description: 'A garden gnome' },
+  'mushroom': { emoji: '🍄', description: 'A colorful mushroom' },
+  'birdbath': { emoji: '🐦', description: 'A bird bath' },
+};
+
 const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
   const [gardenItems, setGardenItems] = useState<GardenItem[]>([]);
+  const [gardenOrnaments, setGardenOrnaments] = useState<GardenOrnament[]>([]);
   const [gardenStats, setGardenStats] = useState<GardenStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlantType, setSelectedPlantType] = useState('');
@@ -70,6 +88,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
   const [showUpgradePanel, setShowUpgradePanel] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [placingPlant, setPlacingPlant] = useState(false);
   const gardenRef = useRef<HTMLDivElement>(null);
 
   // Garden grid configuration
@@ -87,6 +106,25 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
         
       if (itemsError) throw itemsError;
       
+      // Try to fetch garden ornaments, but handle the case where the table might not exist yet
+      let ornamentsData = [];
+      try {
+        const { data, error } = await supabase
+          .from('garden_ornaments')
+          .select('*')
+          .eq('user_id', userId);
+          
+        // Only set the data if there was no error
+        if (!error) {
+          ornamentsData = data || [];
+        } else {
+          console.log('Garden ornaments table might not exist yet:', error);
+        }
+      } catch (ornamentError) {
+        console.log('Error fetching ornaments (table might not exist yet):', ornamentError);
+        // Just continue with empty ornaments data
+      }
+      
       // Fetch user garden stats
       const { data: statsData, error: statsError } = await supabase
         .from('user_garden_stats')
@@ -99,6 +137,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
       }
       
       setGardenItems(itemsData || []);
+      setGardenOrnaments(ornamentsData || []);
       setGardenStats(statsData || {
         total_sessions_completed: 0,
         total_flowers_earned: 0,
@@ -213,6 +252,11 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
     return plantVariant ? plantVariant.emoji : '🌱';
   };
   
+  const getOrnamentEmoji = (type: string) => {
+    const details = getOrnamentDetails(type);
+    return details.emoji;
+  };
+  
   // Improved sharing functionality
   const handleShare = async () => {
     try {
@@ -322,6 +366,27 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
       availableCard.appendChild(availableValue);
       metricsContainer.appendChild(availableCard);
       
+      // Add ornaments to metrics
+      const ornamentsCard = document.createElement('div');
+      ornamentsCard.style.textAlign = 'center';
+      
+      const ornamentsLabel = document.createElement('p');
+      ornamentsLabel.textContent = 'Garden Ornaments';
+      ornamentsLabel.style.fontSize = '14px';
+      ornamentsLabel.style.color = '#166534'; // green-800
+      ornamentsLabel.style.margin = '0 0 4px 0';
+      
+      const ornamentsValue = document.createElement('p');
+      ornamentsValue.textContent = String(gardenOrnaments.length || 0);
+      ornamentsValue.style.fontSize = '28px';
+      ornamentsValue.style.fontWeight = 'bold';
+      ornamentsValue.style.color = '#15803D'; // green-700
+      ornamentsValue.style.margin = '0';
+      
+      ornamentsCard.appendChild(ornamentsLabel);
+      ornamentsCard.appendChild(ornamentsValue);
+      metricsContainer.appendChild(ornamentsCard);
+      
       shareCard.appendChild(metricsContainer);
       
       // Add garden highlight - most impressive plant
@@ -410,20 +475,28 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
       gardenGrid.style.padding = '8px';
       gardenGrid.style.borderRadius = '8px';
       
-      // Populate the grid with plants
+      // Populate the grid with plants and ornaments
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
           const index = y * GRID_SIZE + x;
+          
+          // First check for plants
           const plant = gardenItems.find(
             item => item.position_x === x && item.position_y === y
           );
           
+          // Then check for ornaments
+          const ornament = gardenOrnaments.find(
+            item => item.position_x === x && item.position_y === y
+          );
+          
           // Calculate which cells should show available flowers
-          const occupiedCells = gardenItems.length;
+          const occupiedCells = gardenItems.length + gardenOrnaments.length;
           const flowerIndex = index - occupiedCells;
-          const showIndividualFlower = !plant && 
+          const showIndividualFlower = !plant && !ornament && 
+            gardenStats && 
             flowerIndex >= 0 &&
-            flowerIndex < (gardenStats?.flowers_available || 0);
+            flowerIndex < (gardenStats.flowers_available || 0);
           
           const cell = document.createElement('div');
           cell.style.aspectRatio = '1/1';
@@ -432,9 +505,11 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
           cell.style.justifyContent = 'center';
           cell.style.fontSize = '24px';
           
-          // Different background colors for plants, flowers, and empty cells
+          // Different background colors for plants, ornaments, flowers, and empty cells
           if (plant) {
             cell.style.backgroundColor = '#A7F3D0'; // green-200 for plants
+          } else if (ornament) {
+            cell.style.backgroundColor = '#FED7AA'; // orange-200 for ornaments
           } else if (showIndividualFlower) {
             cell.style.backgroundColor = '#FEF3C7'; // amber-100 for flowers
           } else {
@@ -445,6 +520,8 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
           
           if (plant) {
             cell.textContent = getPlantEmoji(plant.plant_type, plant.plant_variant);
+          } else if (ornament) {
+            cell.textContent = getOrnamentEmoji(ornament.ornament_type);
           } else if (showIndividualFlower) {
             const flowerVariants = PLANT_VARIANTS.flower;
             cell.textContent = flowerVariants[flowerIndex % flowerVariants.length].emoji;
@@ -481,8 +558,35 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
         }
       });
       
-      if (plantTypeTexts.length > 0) {
-        summaryText.textContent = `My garden has: ${plantTypeTexts.join(', ')}`;
+      // Count ornament types
+      const ornamentCounts: Record<string, number> = {};
+      gardenOrnaments.forEach(item => {
+        ornamentCounts[item.ornament_type] = (ornamentCounts[item.ornament_type] || 0) + 1;
+      });
+      
+      // Create summary text for ornaments
+      const ornamentTypeTexts: string[] = [];
+      Object.entries(ornamentCounts).forEach(([type, count]) => {
+        ornamentTypeTexts.push(`${count} ${type}${count > 1 ? 's' : ''}`);
+      });
+      
+      // Combine plant and ornament summaries
+      if (plantTypeTexts.length > 0 || ornamentTypeTexts.length > 0) {
+        let summaryContent = '';
+        
+        if (plantTypeTexts.length > 0) {
+          summaryContent += `My garden has: ${plantTypeTexts.join(', ')}`;
+        }
+        
+        if (ornamentTypeTexts.length > 0) {
+          if (plantTypeTexts.length > 0) {
+            summaryContent += ` and ${ornamentTypeTexts.join(', ')}`;
+          } else {
+            summaryContent += `My garden has: ${ornamentTypeTexts.join(', ')}`;
+          }
+        }
+        
+        summaryText.textContent = summaryContent;
         plantSummary.appendChild(summaryText);
         shareCard.appendChild(plantSummary);
       }
@@ -579,6 +683,75 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
     
     // Otherwise, generate the image
     await handleShare();
+  };
+  
+  // Add ornament rendering to the garden grid
+  const renderGarden = () => {
+    // Generate garden grid
+    return Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
+      const x = index % GRID_SIZE;
+      const y = Math.floor(index / GRID_SIZE);
+      
+      // First check for planted items
+      const plant = gardenItems.find(
+        item => item.position_x === x && item.position_y === y
+      );
+      
+      // Then check for ornaments
+      const ornament = gardenOrnaments.find(
+        item => item.position_x === x && item.position_y === y
+      );
+      
+      // Calculate total cells already occupied by planted items and ornaments
+      const occupiedCells = gardenItems.length + gardenOrnaments.length;
+      
+      // For cells that don't have a planted item or ornament, show individual flowers if available
+      const flowerIndex = index - occupiedCells;
+      const showIndividualFlower = !plant && !ornament && 
+        gardenStats && 
+        flowerIndex >= 0 &&
+        flowerIndex < (gardenStats.flowers_available || 0);
+      
+      return (
+        <div 
+          key={index}
+          className={`aspect-square flex items-center justify-center text-2xl rounded-md ${
+            plant 
+              ? 'bg-green-100' 
+              : ornament 
+                ? 'bg-amber-100' 
+                : showIndividualFlower 
+                  ? 'bg-amber-50' 
+                  : 'bg-green-50 border border-dashed border-green-200'
+          }`}
+          onClick={() => {
+            if (!plant && !ornament && !placingPlant) {
+              setShowUpgradePanel(true);
+            }
+          }}
+        >
+          {plant ? (
+            <span title={`${plant.plant_type} - ${plant.plant_variant}`}>
+              {getPlantEmoji(plant.plant_type, plant.plant_variant)}
+            </span>
+          ) : ornament ? (
+            <span title={`Ornament: ${ornament.ornament_type}`}>
+              {getOrnamentEmoji(ornament.ornament_type)}
+            </span>
+          ) : showIndividualFlower ? (
+            <span title="Available Flower">
+              {PLANT_VARIANTS.flower[flowerIndex % PLANT_VARIANTS.flower.length].emoji}
+            </span>
+          ) : null}
+        </div>
+      );
+    });
+  };
+  
+  // Helper function for ornaments
+  const getOrnamentEmoji = (type: string) => {
+    const details = getOrnamentDetails(type);
+    return details.emoji;
   };
   
   // Modal backdrop
@@ -754,7 +927,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
               
               {/* Garden grid */}
               <div className="mb-6">
-                <h3 className="font-medium text-gray-700 mb-2">Your Plants</h3>
+                <h3 className="font-medium text-gray-700 mb-2">Your Garden</h3>
                 <div 
                   ref={gardenRef}
                   className="border border-green-200 rounded-lg bg-green-50 p-2"
@@ -763,46 +936,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
                     className="grid gap-2"
                     style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
                   >
-                    {/* Generate garden grid */}
-                    {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, index) => {
-                      const x = index % GRID_SIZE;
-                      const y = Math.floor(index / GRID_SIZE);
-                      
-                      // First check for planted items
-                      const plant = gardenItems.find(
-                        item => item.position_x === x && item.position_y === y
-                      );
-                      
-                      // Calculate total cells already occupied by planted items
-                      const occupiedCells = gardenItems.length;
-                      
-                      // For cells that don't have a planted item, show individual flowers if available
-                      // We'll show flowers in the first empty cells after any planted items
-                      const flowerIndex = index - occupiedCells;
-                      const showIndividualFlower = !plant && 
-                        gardenStats && 
-                        flowerIndex >= 0 &&
-                        flowerIndex < (gardenStats.flowers_available || 0);
-                      
-                      return (
-                        <div 
-                          key={index}
-                          className={`aspect-square flex items-center justify-center text-2xl rounded-md ${
-                            plant ? 'bg-green-100' : showIndividualFlower ? 'bg-amber-50' : 'bg-green-50 border border-dashed border-green-200'
-                          }`}
-                        >
-                          {plant ? (
-                            <span title={`${plant.plant_type} - ${plant.plant_variant}`}>
-                              {getPlantEmoji(plant.plant_type, plant.plant_variant)}
-                            </span>
-                          ) : showIndividualFlower ? (
-                            <span title="Available Flower">
-                              {PLANT_VARIANTS.flower[flowerIndex % PLANT_VARIANTS.flower.length].emoji}
-                            </span>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                    {renderGarden()}
                   </div>
                 </div>
               </div>
@@ -810,7 +944,7 @@ const Garden: React.FC<GardenProps> = ({ userId, isOpen, onClose }) => {
               <div className="bg-yellow-50 p-3 rounded-md text-yellow-800 text-sm flex items-start">
                 <Info size={18} className="mr-2 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p>Complete 30-minute "Touch Grass" sessions to earn flowers for your garden.</p>
+                  <p>Complete 30-minute "Touch Grass" sessions to earn flowers for your garden. You have a 20% chance to find a special garden ornament instead!</p>
                   {gardenStats && (gardenStats.flowers_available || 0) >= 5 && (
                     <p className="mt-1 font-medium">
                       You have enough flowers to upgrade to a new plant type!

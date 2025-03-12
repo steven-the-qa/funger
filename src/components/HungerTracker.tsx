@@ -273,9 +273,24 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
     return `${minutes} min ${remainingSeconds} sec`;
   };
 
-  const handleGrassSessionCompleted = () => {
-    // Just a placeholder for now - we could refresh garden data here if needed
-    console.log('Grass session completed!');
+  const handleGrassSessionCompleted = async () => {
+    try {
+      console.log('Grass session completed!');
+      
+      // Refresh garden data if the garden component is open
+      if (showGarden && userId) {
+        // We can't directly refresh the Garden component's data
+        // But we can toggle it to force a refresh
+        setShowGarden(false);
+        setTimeout(() => setShowGarden(true), 100);
+      }
+      
+      // If we wanted to show a message about the reward,
+      // we would need to fetch the latest session and check what was awarded.
+      // For now, we'll keep it simple and just refresh the garden data.
+    } catch (error) {
+      console.error('Error handling grass session completion:', error);
+    }
   };
 
   if (loading) {
