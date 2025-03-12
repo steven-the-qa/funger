@@ -25,6 +25,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
   const [shareCard, setShareCard] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Helper function to get ornament emoji
@@ -82,12 +83,13 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
   // Handle sharing button click - now creates both text and image
   const handleShareClick = async () => {
     setIsSharing(true);
+    setGeneratingImage(true);
+    setShowShareModal(true);
+
+    // Generate shareText but don't set shareCard state yet
     const shareText = generateShareCard();
-    setShareCard(shareText);
     
     try {
-      setGeneratingImage(true);
-      
       // Create a dedicated share card for image creation
       const shareCard = document.createElement('div');
       shareCard.style.width = '600px';
@@ -221,10 +223,15 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       
       // Convert to image URL
       const imageUrl = canvas.toDataURL('image/png');
+      
+      // Once the image is ready, set both states
       setShareUrl(imageUrl);
+      setShareCard(shareText);
       
     } catch (error) {
       console.error('Error creating share image:', error);
+      // In case of error, still show the text version
+      setShareCard(shareText);
     } finally {
       setGeneratingImage(false);
     }
@@ -267,7 +274,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       window.open(shareUrl, '_blank');
       return;
     }
-    
+
     // Traditional download for other devices
     const link = document.createElement('a');
     link.href = shareUrl || '';
@@ -282,6 +289,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
     setIsSharing(false);
     setShareCard(null);
     setShareUrl(null);
+    setShowShareModal(false);
   };
 
   return (
@@ -295,7 +303,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
         Share Garden
       </button>
 
-      {shareCard && (
+      {showShareModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 share-card-animate" ref={cardRef}>
             <div className="flex justify-between items-center mb-4">
@@ -308,9 +316,17 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
                 ✕
               </button>
             </div>
-            
-            {/* Show image or text based on what's available */}
-            {shareUrl ? (
+
+            {/* Show loading spinner while generating */}
+            {generatingImage && !shareUrl && (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="animate-spin h-12 w-12 mb-4 border-4 border-green-600 rounded-full border-t-transparent"></div>
+                <p className="text-gray-600 font-medium">Creating your garden image...</p>
+              </div>
+            )}
+
+            {/* Show image when ready */}
+            {shareUrl && (
               <div className="mb-6">
                 <div className="mb-3 border border-gray-200 rounded-md overflow-hidden">
                   <img 
@@ -327,17 +343,15 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
                   Download Image
                 </button>
               </div>
-            ) : (
+            )}
+
+            {/* Show text version only if image generation failed */}
+            {shareCard && !shareUrl && !generatingImage && (
               <div className="mb-6">
+                <div className="bg-amber-50 p-3 mb-3 rounded-md text-amber-700 text-sm">
+                  Unable to create image. You can still share the text version below.
+                </div>
                 <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-sm mb-4 whitespace-pre-wrap font-mono">{shareCard}</pre>
-                {generatingImage ? (
-                  <div className="w-full py-2 px-4 bg-gray-100 text-gray-600 rounded-md font-medium flex items-center justify-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-green-600 rounded-full border-t-transparent"></div>
-                    Generating image...
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-600 text-center">Preparing your garden image...</p>
-                )}
               </div>
             )}
           </div>
