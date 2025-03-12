@@ -1,0 +1,88 @@
+/* Garden styles using Tailwind utility classes */
+
+/* Garden modal animation */
+@keyframes garden-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes garden-modal-slide-in {
+  from { transform: translateY(10px); }
+  to { transform: translateY(0); }
+}
+
+.garden-modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto;
+  @apply py-6 px-4;
+  animation: garden-modal-fade-in 0.3s ease-out forwards;
+}
+
+.garden-modal-content {
+  @apply w-full max-w-4xl my-4;
+  animation: garden-modal-slide-in 0.3s ease-out forwards;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .garden-modal-overlay {
+    @apply py-2 px-2;
+  }
+  
+  .garden-modal-content {
+    @apply my-1;
+  }
+}
+
+/* Garden container for non-modal view */
+.garden-container {
+  @apply max-w-4xl mx-auto my-6 overflow-x-hidden;
+}
+
+/* Garden grid cell animation for placing plants */
+@keyframes garden-cell-pulse {
+  0% { background-color: rgba(74, 222, 128, 0.2); }
+  50% { background-color: rgba(74, 222, 128, 0.4); }
+  100% { background-color: rgba(74, 222, 128, 0.2); }
+}
+
+.garden-cell-placing {
+  animation: garden-cell-pulse 1.5s infinite;
+}
+
+/* Upgrading plant animation */
+@keyframes plant-upgrade-glow {
+  0% { box-shadow: 0 0 5px rgba(5, 150, 105, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(5, 150, 105, 0.6); }
+  100% { box-shadow: 0 0 5px rgba(5, 150, 105, 0.2); }
+}
+
+.plant-upgrading {
+  animation: plant-upgrade-glow 2s infinite;
+}
+
+/* Share card animation */
+@keyframes share-card-appear {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.share-card-animate {
+  animation: share-card-appear 0.3s ease-out forwards;
+}
+
+/* Lucky clover size variants */
+.clover-rare {
+  @apply text-[1.2em];
+  transform: scale(1.2);
+}
+
+.clover-epic {
+  @apply text-[1.5em];
+  transform: scale(1.5);
+}
+
+.clover-legendary {
+  @apply text-[1.8em];
+  transform: scale(1.8);
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.6));
+} 

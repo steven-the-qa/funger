@@ -5,7 +5,7 @@ import { History, BarChart3, Skull, ThumbsUpIcon, Cookie } from 'lucide-react';
 import LoadingScreen from './LoadingScreen';
 import CookieJar from './CookieJar';
 import TouchGrassTimer from './TouchGrassTimer';
-import Garden from './Garden';
+import Garden from './garden/Garden';
 import type { HungerRecord } from '../lib/supabase';
 import type { ChartData, ChartOptions, Point, TooltipItem } from 'chart.js';
 

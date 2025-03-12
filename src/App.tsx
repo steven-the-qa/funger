@@ -5,6 +5,7 @@ import HungerTracker from './components/HungerTracker';
 import LoadingScreen from './components/LoadingScreen';
 import { CookingPot } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
+import AuthProvider from './contexts/AuthContext';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -68,20 +69,22 @@ function App() {
 
   // Render the appropriate UI based on authentication state
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-md mx-auto pt-8">
-        {!session ? (
-          <div className="text-center mb-8">
-            <CookingPot size={48} className="mx-auto mb-4 text-purple-600" />
-            <h1 className="text-3xl font-bold mb-2 text-purple-600">Funger</h1>
-            <p className="text-gray-600 mb-8">Track your hunger patterns.</p>
-            <Auth onLogin={() => {}} />
-          </div>
-        ) : (
-          <HungerTracker onLogout={handleLogout} />
-        )}
+    <AuthProvider>
+      <div className="min-h-screen bg-gray-100 p-4">
+        <div className="max-w-md mx-auto pt-8">
+          {!session ? (
+            <div className="text-center mb-8">
+              <CookingPot size={48} className="mx-auto mb-4 text-purple-600" />
+              <h1 className="text-3xl font-bold mb-2 text-purple-600">Funger</h1>
+              <p className="text-gray-600 mb-8">Track your hunger patterns.</p>
+              <Auth onLogin={() => {}} />
+            </div>
+          ) : (
+            <HungerTracker onLogout={handleLogout} />
+          )}
+        </div>
       </div>
-    </div>
+    </AuthProvider>
   );
 }
 
