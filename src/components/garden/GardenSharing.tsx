@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { GardenItem, GardenOrnament, GardenStats } from '../../hooks/useGardenData';
 import { getPlantEmoji } from '../../utils/plantUtils';
 import { getOrnamentDetails } from '../../utils/ornamentUtils';
@@ -12,6 +12,7 @@ interface GardenSharingProps {
   gridSize: number;
   isSharing: boolean;
   setIsSharing: (isSharing: boolean) => void;
+  inventoryPlants?: Record<string, Record<string, number>>; // New prop for inventory plants
 }
 
 export const GardenSharing: React.FC<GardenSharingProps> = ({
@@ -19,14 +20,23 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
   gardenOrnaments,
   gardenStats,
   gridSize,
-  isSharing,
   setIsSharing,
+  inventoryPlants = {}, // Default to empty object
 }) => {
   const [shareCard, setShareCard] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Check if html2canvas is available
+  useEffect(() => {
+    if (typeof html2canvas !== 'function') {
+      console.error('html2canvas is not properly loaded:', html2canvas);
+    } else {
+      console.log('html2canvas is available');
+    }
+  }, []);
 
   // Helper function to get ornament emoji
   const getOrnamentEmoji = (type: string): string => {
@@ -60,6 +70,23 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
     return grid;
   };
 
+  // Helper function to get inventory summary
+  const getInventorySummary = () => {
+    const summary: Record<string, number> = {};
+    const plantTypes = Object.keys(inventoryPlants);
+    
+    // Count total inventory by plant type (sum all variants)
+    plantTypes.forEach(type => {
+      const variantCounts = inventoryPlants[type];
+      const totalTypeCount = Object.values(variantCounts).reduce((sum, count) => sum + count, 0);
+      if (totalTypeCount > 0) {
+        summary[type] = totalTypeCount;
+      }
+    });
+    
+    return summary;
+  };
+
   // Generate the share card HTML
   const generateShareCard = () => {
     const grid = createGardenGrid();
@@ -69,29 +96,93 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
     let shareText = "🌱 My Garden 🌱\n\n";
     shareText += gridText + "\n\n";
     
-    if (gardenStats) {
-      shareText += `🌿 Plants: ${gardenItems.length}\n`;
-      shareText += `🪨 Ornaments: ${gardenOrnaments.length}\n\n`;
+    // Add inventory info
+    const inventorySummary = getInventorySummary();
+    if (Object.keys(inventorySummary).length > 0) {
+      shareText += "🎒 My Inventory:\n";
+      
+      Object.entries(inventorySummary).forEach(([type, count]) => {
+        const emoji = getPlantEmoji(type, 'basic');
+        const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+        shareText += `${emoji} ${typeName}s: ${count}\n`;
+      });
+      
+      shareText += "\n";
     }
     
+    // Get the actual Touch Grass sessions completed from database
+    let touchGrassSessions = 0;
+    
+    if (gardenStats) {
+      // Use the actual value from the database
+      touchGrassSessions = gardenStats.total_sessions_completed || 0;
+    }
+    
+    // Add celebratory message based on actual sessions
+    let celebrationMessage = "";
+    if (touchGrassSessions === 0) {
+      celebrationMessage = "🌱 Just getting started with Touch Grass!\n";
+    } else if (touchGrassSessions <= 5) {
+      celebrationMessage = `🌿 I've completed ${touchGrassSessions} Touch Grass sessions. Fresh air feels great!\n`;
+    } else if (touchGrassSessions <= 15) {
+      celebrationMessage = `🌿 Wow! I've spent ${touchGrassSessions} half-hours outdoors. Nature is my friend!\n`;
+    } else if (touchGrassSessions <= 30) {
+      celebrationMessage = `🌲 An outdoor enthusiast with ${touchGrassSessions} Touch Grass sessions. The sun high-fives me!\n`;
+    } else {
+      celebrationMessage = `🌳 ${touchGrassSessions} Touch Grass sessions - I'm practically photosynthesizing at this point!\n`;
+    }
+    
+    shareText += celebrationMessage + "\n";
     shareText += "30 minutes of fresh air = 1 fake flower\n";
     shareText += "https://funger.netlify.app";
     
     return shareText;
   };
 
+  // Create a simpler version of the share card if the full one fails
+  const createFallbackShareCard = () => {
+    // If full image generation fails, create a simple text version
+    const shareText = generateShareCard();
+    setShareCard(shareText);
+    setGeneratingImage(false);
+    console.log("Fallback share card created");
+  };
+
   // Handle sharing button click - now creates both text and image
   const handleShareClick = async () => {
+    console.log("Share button clicked"); // Debug log
+    
+    // Force the modal to open regardless of other conditions
     setIsSharing(true);
     setGeneratingImage(true);
     setShowShareModal(true);
 
-    // Generate shareText but don't set shareCard state yet
-    const shareText = generateShareCard();
+    try {
+      // First, create and set the text version as a fallback
+      const shareText = generateShareCard();
+      setShareCard(shareText);
+      
+      // Then attempt to create the image version
+      await createShareImage();
+    } catch (error) {
+      console.error("Share error:", error);
+      createFallbackShareCard();
+    } finally {
+      // Always ensure we set generatingImage to false
+      setGeneratingImage(false);
+    }
+  };
+  
+  // Separate function to create the share image
+  const createShareImage = async () => {
+    let tempElement = null;
     
     try {
+      console.log("Starting to create share card"); // Debug log
+      
       // Create a dedicated share card for image creation
       const shareCard = document.createElement('div');
+      tempElement = shareCard; // Store reference for cleanup in finally block
       shareCard.style.width = '600px';
       shareCard.style.padding = '24px';
       shareCard.style.backgroundColor = '#F0FDF4'; // Green tint
@@ -155,44 +246,120 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       gardenContainer.appendChild(gridEl);
       shareCard.appendChild(gardenContainer);
       
-      // Add garden stats
+      // Add inventory summary
+      const inventorySummary = getInventorySummary();
+      if (Object.keys(inventorySummary).length > 0) {
+        const inventoryContainer = document.createElement('div');
+        inventoryContainer.style.backgroundColor = '#F5F3FF'; // Purple-50
+        inventoryContainer.style.border = '2px solid #DDD6FE'; // Purple-200
+        inventoryContainer.style.borderRadius = '8px';
+        inventoryContainer.style.padding = '16px';
+        inventoryContainer.style.marginBottom = '20px';
+        
+        const inventoryTitle = document.createElement('div');
+        inventoryTitle.textContent = '🎒 My Inventory';
+        inventoryTitle.style.fontSize = '16px';
+        inventoryTitle.style.fontWeight = 'bold';
+        inventoryTitle.style.color = '#7C3AED'; // Purple-600
+        inventoryTitle.style.marginBottom = '12px';
+        inventoryContainer.appendChild(inventoryTitle);
+        
+        const inventoryGrid = document.createElement('div');
+        inventoryGrid.style.display = 'grid';
+        inventoryGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        inventoryGrid.style.gap = '8px';
+        
+        Object.entries(inventorySummary).forEach(([type, count]) => {
+          const itemEl = document.createElement('div');
+          itemEl.style.display = 'flex';
+          itemEl.style.alignItems = 'center';
+          itemEl.style.padding = '8px';
+          itemEl.style.backgroundColor = '#FFFFFF';
+          itemEl.style.borderRadius = '4px';
+          itemEl.style.border = '1px solid #EDE9FE'; // Purple-100
+          
+          const emoji = document.createElement('span');
+          emoji.textContent = getPlantEmoji(type, 'basic');
+          emoji.style.fontSize = '20px';
+          emoji.style.marginRight = '8px';
+          
+          const typeInfo = document.createElement('div');
+          typeInfo.style.display = 'flex';
+          typeInfo.style.flexDirection = 'column';
+          
+          const typeName = document.createElement('span');
+          typeName.textContent = type.charAt(0).toUpperCase() + type.slice(1) + 's';
+          typeName.style.fontSize = '14px';
+          typeName.style.fontWeight = 'bold';
+          
+          const typeCount = document.createElement('span');
+          typeCount.textContent = `${count} in inventory`;
+          typeCount.style.fontSize = '12px';
+          typeCount.style.color = '#6B7280'; // Gray-500
+          
+          typeInfo.appendChild(typeName);
+          typeInfo.appendChild(typeCount);
+          
+          itemEl.appendChild(emoji);
+          itemEl.appendChild(typeInfo);
+          inventoryGrid.appendChild(itemEl);
+        });
+        
+        inventoryContainer.appendChild(inventoryGrid);
+        shareCard.appendChild(inventoryContainer);
+      }
+      
+      // Add garden stats - REPLACED WITH CELEBRATION MESSAGE
       if (gardenStats) {
         const statsContainer = document.createElement('div');
         statsContainer.style.display = 'flex';
-        statsContainer.style.justifyContent = 'space-around';
+        statsContainer.style.flexDirection = 'column';
+        statsContainer.style.alignItems = 'center';
+        statsContainer.style.textAlign = 'center';
         statsContainer.style.marginBottom = '16px';
+        statsContainer.style.padding = '12px';
+        statsContainer.style.backgroundColor = '#ECFDF5';
+        statsContainer.style.borderRadius = '8px';
         
-        const createStatItem = (emoji: string, label: string, value: number) => {
-          const statItem = document.createElement('div');
-          statItem.style.display = 'flex';
-          statItem.style.flexDirection = 'column';
-          statItem.style.alignItems = 'center';
-          
-          const statEmoji = document.createElement('div');
-          statEmoji.textContent = emoji;
-          statEmoji.style.fontSize = '24px';
-          statEmoji.style.marginBottom = '4px';
-          
-          const statValue = document.createElement('div');
-          statValue.textContent = value.toString();
-          statValue.style.fontWeight = 'bold';
-          statValue.style.fontSize = '16px';
-          
-          const statLabel = document.createElement('div');
-          statLabel.textContent = label;
-          statLabel.style.fontSize = '12px';
-          statLabel.style.color = '#047857'; // green-700
-          
-          statItem.appendChild(statEmoji);
-          statItem.appendChild(statValue);
-          statItem.appendChild(statLabel);
-          
-          return statItem;
-        };
+        // Get the actual Touch Grass sessions completed from database
+        const touchGrassSessions = gardenStats.total_sessions_completed || 0;
         
-        statsContainer.appendChild(createStatItem('🌿', 'Plants', gardenItems.length));
-        statsContainer.appendChild(createStatItem('🪨', 'Ornaments', gardenOrnaments.length));
+        // Add celebratory emoji
+        const celebrationEmoji = document.createElement('div');
+        celebrationEmoji.style.fontSize = '32px';
+        celebrationEmoji.style.marginBottom = '8px';
         
+        let celebrationText = "";
+        
+        if (touchGrassSessions === 0) {
+          celebrationEmoji.textContent = '🌱';
+          celebrationText = "Just getting started with Touch Grass!";
+        } else if (touchGrassSessions <= 5) {
+          celebrationEmoji.textContent = '🌿';
+          celebrationText = `I've completed ${touchGrassSessions} Touch Grass sessions. Fresh air feels great!`;
+        } else if (touchGrassSessions <= 15) {
+          celebrationEmoji.textContent = '🌿✨';
+          celebrationText = `Wow! I've spent ${touchGrassSessions} half-hours outdoors. Nature is my friend!`;
+        } else if (touchGrassSessions <= 30) {
+          celebrationEmoji.textContent = '🌲🌞';
+          celebrationText = `An outdoor enthusiast with ${touchGrassSessions} Touch Grass sessions. The sun high-fives me!`;
+        } else {
+          celebrationEmoji.textContent = '🌳🏆';
+          celebrationText = `${touchGrassSessions} Touch Grass sessions - I'm practically photosynthesizing at this point!`;
+        }
+        
+        statsContainer.appendChild(celebrationEmoji);
+        
+        const celebrationMessage = document.createElement('div');
+        celebrationMessage.textContent = celebrationText;
+        celebrationMessage.style.fontSize = '14px';
+        celebrationMessage.style.fontWeight = 'bold';
+        celebrationMessage.style.color = '#047857';
+        celebrationMessage.style.margin = '0 auto';
+        celebrationMessage.style.maxWidth = '400px';
+        celebrationMessage.style.lineHeight = '1.4';
+        
+        statsContainer.appendChild(celebrationMessage);
         shareCard.appendChild(statsContainer);
       }
       
@@ -212,57 +379,61 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       document.body.appendChild(shareCard);
       
       // Generate image
-      const canvas = await html2canvas(shareCard, {
-        scale: 2, // Higher quality
-        logging: false,
-        useCORS: true,
-      });
-      
-      // Remove temporary element
-      document.body.removeChild(shareCard);
-      
-      // Convert to image URL
-      const imageUrl = canvas.toDataURL('image/png');
-      
-      // Once the image is ready, set both states
-      setShareUrl(imageUrl);
-      setShareCard(shareText);
-      
+      try {
+        console.log("Starting html2canvas rendering"); // Debug log
+        
+        // Use a simpler html2canvas configuration
+        const canvas = await html2canvas(shareCard, {
+          scale: 1, // Lower resolution to avoid memory issues
+          logging: true, // Enable logging
+          useCORS: true
+        });
+        
+        console.log("html2canvas rendering complete"); // Debug log
+        
+        // Get data URL and set states
+        const imageUrl = canvas.toDataURL('image/png');
+        setShareUrl(imageUrl);
+        console.log("Image URL created and state updated"); // Debug log
+      } catch (canvasError) {
+        console.error("Error in html2canvas:", canvasError);
+        throw canvasError; // Re-throw to be caught by the outer try-catch
+      }
     } catch (error) {
-      console.error('Error creating share image:', error);
-      // In case of error, still show the text version
-      setShareCard(shareText);
+      console.error('Error creating share card:', error);
+      throw error; // Re-throw to be caught by the main handler
     } finally {
-      setGeneratingImage(false);
+      // Clean up the temporary DOM element if it exists
+      if (tempElement && tempElement.parentNode) {
+        try {
+          document.body.removeChild(tempElement);
+        } catch (e) {
+          console.error('Error cleaning up temporary element:', e);
+        }
+      }
     }
   };
 
-  // Handle downloading the image
-  const handleDownload = () => {
-    if (!shareUrl) return;
-    
-    // Check if this is a mobile device
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile && navigator.share) {
-      // Use Web Share API on mobile if available
-      fetch(shareUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'my-funger-garden.png', { type: 'image/png' });
-          
-          navigator.share({
-            files: [file],
-            title: 'My Funger Garden',
-            text: 'Check out my virtual garden in Funger!'
-          }).catch(error => {
-            console.error('Error sharing:', error);
-            // Fall back to traditional download if sharing fails
-            performDownload();
-          });
+  // Handle copying the share text to clipboard
+  const handleCopyText = () => {
+    if (shareCard) {
+      navigator.clipboard.writeText(shareCard)
+        .then(() => {
+          alert('Garden share text copied to clipboard!');
+        })
+        .catch(err => {
+          console.error('Could not copy text: ', err);
         });
+    }
+  };
+
+  // Handle download
+  const handleDownload = () => {
+    // Check if it's an iOS device to handle differently
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      performDownload();
     } else {
-      // For desktop or if Web Share API isn't available
+      // For all other devices
       performDownload();
     }
   };
@@ -297,7 +468,6 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       <button
         className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors flex items-center justify-center gap-2"
         onClick={handleShareClick}
-        disabled={isSharing || (gardenItems.length === 0 && gardenOrnaments.length === 0)}
       >
         <Share2 size={18} />
         Share Garden
@@ -352,6 +522,12 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
                   Unable to create image. You can still share the text version below.
                 </div>
                 <pre className="bg-gray-50 p-4 rounded-md overflow-auto text-sm mb-4 whitespace-pre-wrap font-mono">{shareCard}</pre>
+                <button
+                  className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors"
+                  onClick={handleCopyText}
+                >
+                  Copy Text to Clipboard
+                </button>
               </div>
             )}
           </div>
