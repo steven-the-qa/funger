@@ -64,7 +64,7 @@ export const PlantUpgradePanel: React.FC<PlantUpgradePanelProps> = ({
   
   // Handle sell button click
   const handleSell = async () => {
-    if (confirm(`Are you sure you want to sell this ${plantDetails?.name || 'plant'} for ${sellValue} flowers?`)) {
+    if (confirm(`Are you sure you want to sell this ${plantDetails?.name || 'plant'} for ${sellValue} Daisies?`)) {
       await onSellPlant(selectedPlant.id, selectedPlant.plant_type, selectedPlant.plant_variant);
     }
   };
@@ -96,7 +96,7 @@ export const PlantUpgradePanel: React.FC<PlantUpgradePanelProps> = ({
           <div className="bg-green-50 p-4 rounded-md">
             <p className="mb-3 text-gray-700">
               Upgrade to <span className="font-medium">{nextVariant.charAt(0).toUpperCase() + nextVariant.slice(1)}</span> for 
-              <span className="text-amber-600 font-bold"> {upgradeCost} 🌼</span>
+              <span className="text-amber-600 font-bold"> {upgradeCost} 🌼 Daisies</span>
             </p>
             <button
               className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
@@ -111,7 +111,7 @@ export const PlantUpgradePanel: React.FC<PlantUpgradePanelProps> = ({
             </button>
             {!canUpgrade && gardenStats && (
               <p className="mt-2 text-sm text-red-600">
-                Not enough flowers! You need {upgradeCost - gardenStats.flowers_available} more.
+                Not enough Daisies! You need {upgradeCost - gardenStats.flowers_available} more.
               </p>
             )}
           </div>
@@ -125,7 +125,7 @@ export const PlantUpgradePanel: React.FC<PlantUpgradePanelProps> = ({
         {!isFlower && (
           <div className="bg-amber-50 p-4 rounded-md">
             <p className="mb-3 text-gray-700">
-              Sell this plant for <span className="text-amber-600 font-bold">{sellValue} 🌼</span>
+              Sell this plant for <span className="text-amber-600 font-bold">{sellValue} 🌼 Daisies</span>
             </p>
             <button
               className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-md font-medium transition-colors"

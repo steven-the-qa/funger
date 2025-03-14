@@ -88,6 +88,7 @@ export const Garden: React.FC<GardenProps> = ({
       loadAvailableOrnaments();
       loadPlantInventory();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, loadGardenData]);
   
   // Set initial selected plant based on available inventory
@@ -248,9 +249,17 @@ export const Garden: React.FC<GardenProps> = ({
       return true;
     }
     
+    // If the user has available Daisies, they can be placed
+    if (gardenStats.flowers_available > 0) {
+      return true;
+    }
+    
     // If all flowers are already placed, no more regular plants can be placed
-    const placedFlowers = gardenItems.filter(item => item.plant_type === 'flower').length;
-    if (placedFlowers >= gardenStats.flowers_available) {
+    const placedDaisies = gardenItems.filter(item => 
+      item.plant_type === 'flower' && item.plant_variant === 'basic'
+    ).length;
+    
+    if (placedDaisies >= gardenStats.flowers_available) {
       return false;
     }
     
@@ -470,10 +479,71 @@ export const Garden: React.FC<GardenProps> = ({
     setSelectedPlantVariant(variant);
   };
 
+  // Helper function to determine if the currently selected plant can be placed
+  const canPlaceSelectedPlant = (): boolean => {
+    if (!gardenStats) return false;
+    
+    // Check if the selected plant is a Daisy
+    const isDaisy = selectedPlantType === 'flower' && selectedPlantVariant === 'basic';
+    
+    // Count how many of this plant type and variant are already placed in the garden
+    const placedCount = gardenItems.filter(
+      item => item.plant_type === selectedPlantType && item.plant_variant === selectedPlantVariant
+    ).length;
+    
+    // Count how many of this plant type and variant are in inventory
+    const inventoryCount = inventoryPlants[selectedPlantType]?.[selectedPlantVariant] || 0;
+    
+    // For basic Daisies, check both inventory and available flower currency together
+    if (isDaisy) {
+      // Total available = inventory + flower currency
+      const totalAvailable = inventoryCount + gardenStats.flowers_available;
+      
+      // Can only place if we haven't placed all available Daisies
+      return placedCount < totalAvailable;
+    }
+    
+    // For all other plants, check if we have more in inventory than already placed
+    if (inventoryCount > 0) {
+      return placedCount < inventoryCount;
+    }
+    
+    // If none in inventory, check if we can purchase a new one (for basic variants)
+    if (selectedPlantVariant === 'basic') {
+      return canAffordPlant(selectedPlantType);
+    }
+    
+    // For upgraded plants, check if we can afford the upgrade and have prerequisites
+    const upgradeVariantCosts = { rare: 5, epic: 10, legendary: 15 };
+    const upgradeCost = upgradeVariantCosts[selectedPlantVariant as keyof typeof upgradeVariantCosts] || 0;
+    
+    // Check flowers cost
+    if (gardenStats.flowers_available < upgradeCost) {
+      return false;
+    }
+    
+    // Check prerequisites for non-flower plants
+    if (selectedPlantType !== 'flower') {
+      const inventory = calculateInventoryBreakdown();
+      const hasPrerequisite = selectedPlantVariant === 'rare' 
+        ? inventory[selectedPlantType].basic > 0
+        : selectedPlantVariant === 'epic'
+          ? inventory[selectedPlantType].rare > 0
+          : inventory[selectedPlantType].epic > 0;
+          
+      return hasPrerequisite;
+    }
+    
+    return true;
+  };
+
   // Handle starting to place a plant
   const handleStartPlacing = () => {
     // Check if the user can afford this plant (either basic or upgraded)
     if (!gardenStats) return;
+    
+    // Check if the selected plant is a Daisy
+    const isDaisy = selectedPlantType === 'flower' && selectedPlantVariant === 'basic';
     
     // Case 1: Check if it's in inventory first
     const inventoryCount = inventoryPlants[selectedPlantType]?.[selectedPlantVariant] || 0;
@@ -485,18 +555,28 @@ export const Garden: React.FC<GardenProps> = ({
       return;
     }
     
+    // Don't proceed if we can't place the selected plant
+    if (!canPlaceSelectedPlant()) {
+      if (isDaisy) {
+        alert("You don't have any Daisies available to place.");
+      } else {
+        alert(`You can't place this plant. Check your inventory or Daisy balance.`);
+      }
+      return;
+    }
+    
     // Case 2: Basic variant of non-flower plants - check standard cost
     if (selectedPlantVariant === 'basic') {
-      // For basic flowers, check if we can place from available flowers
-      if (selectedPlantType === 'flower') {
+      // For basic flowers (Daisies), check if we can place from available Daisies
+      if (isDaisy) {
         if (gardenStats.flowers_available <= 0) {
-          alert("You don't have any flowers available to place.");
+          alert("You don't have any Daisies available to place.");
           return;
         }
       } else if (!canAffordPlant(selectedPlantType)) {
         // For other plant types, check standard cost
         const cost = PLANT_COSTS[selectedPlantType];
-        alert(`Not enough flowers! You need ${cost} flowers to place a ${selectedPlantType}.`);
+        alert(`Not enough Daisies! You need ${cost} Daisies to place a ${selectedPlantType}.`);
         return;
       }
     }
@@ -510,7 +590,7 @@ export const Garden: React.FC<GardenProps> = ({
       
       // Check flower cost
       if (gardenStats.flowers_available < upgradeCost) {
-        alert(`Not enough flowers! You need ${upgradeCost} flowers to place a ${getPlantDetails(selectedPlantType, selectedPlantVariant)?.name || selectedPlantVariant + ' ' + selectedPlantType}.`);
+        alert(`Not enough Daisies! You need ${upgradeCost} Daisies to place a ${getPlantDetails(selectedPlantType, selectedPlantVariant)?.name || selectedPlantVariant + ' ' + selectedPlantType}.`);
         return;
       }
       
@@ -763,7 +843,16 @@ export const Garden: React.FC<GardenProps> = ({
     
     return (
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-3">Select Plant</h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-medium text-gray-700">Select Plant</h3>
+          
+          {/* Add Daisy counter - simplified to just show number and emoji */}
+          {gardenStats && (
+            <div className="text-sm bg-amber-50 px-3 py-1 rounded-full flex items-center">
+              <span className="text-amber-700 font-medium">🌼 {gardenStats.flowers_available}</span>
+            </div>
+          )}
+        </div>
         
         {/* Dropdown button */}
         <div className="relative">
@@ -825,7 +914,7 @@ export const Garden: React.FC<GardenProps> = ({
                                  (type === 'flower' && (!gardenStats || gardenStats.flowers_available <= 0) && (!inventoryPlants.flower || inventoryPlants.flower.basic <= 0))}
                         title={
                           isPremiumType && !canAfford 
-                            ? `Need ${PLANT_COSTS[type]} flowers` 
+                            ? `Need ${PLANT_COSTS[type]} Daisies` 
                             : type === 'flower' && (!gardenStats || gardenStats.flowers_available <= 0) && (!inventoryPlants.flower || inventoryPlants.flower.basic <= 0)
                                 ? "No Daisies available" 
                                 : undefined
@@ -837,7 +926,7 @@ export const Garden: React.FC<GardenProps> = ({
                             <span>{getPlantDetails(type, 'basic')?.name || 'Basic'}</span>
                             <span className="text-xs text-gray-500">Basic</span>
                             {!canAfford && isPremiumType && (
-                              <span className="text-xs text-red-500">Need {PLANT_COSTS[type]} flowers</span>
+                              <span className="text-xs text-red-500">Need {PLANT_COSTS[type]} Daisies</span>
                             )}
                             {type === 'flower' && (!gardenStats || gardenStats.flowers_available <= 0) && (!inventoryPlants.flower || inventoryPlants.flower.basic <= 0) && (
                               <span className="text-xs text-red-500">No Daisies available</span>
@@ -885,7 +974,7 @@ export const Garden: React.FC<GardenProps> = ({
                           // For flowers, only check if they have enough flowers
                           if (!hasFlowers) {
                             const upgradeCost = variant === 'rare' ? 5 : variant === 'epic' ? 10 : 15;
-                            disabledReason = `Need ${upgradeCost} flowers`;
+                            disabledReason = `Need ${upgradeCost} Daisies`;
                           }
                         } else {
                           // For non-flowers, check both prerequisites and flowers
@@ -897,7 +986,7 @@ export const Garden: React.FC<GardenProps> = ({
                             disabledReason = `Requires ${prerequisiteName}`;
                           } else if (!hasFlowers) {
                             const upgradeCost = variant === 'rare' ? 5 : variant === 'epic' ? 10 : 15;
-                            disabledReason = `Need ${upgradeCost} flowers`;
+                            disabledReason = `Need ${upgradeCost} Daisies`;
                           }
                         }
                         
@@ -1056,7 +1145,56 @@ export const Garden: React.FC<GardenProps> = ({
     
     return (
       <p className="text-sm text-amber-600 mb-4 text-center">
-        No plants available to place. Sell or remove a plant first.
+        No plants available to place. Sell or remove a plant first, or complete a Touch Grass session to earn more Daisies.
+      </p>
+    );
+  };
+
+  // Helper function to show a message when all available plants are already placed
+  const showAlreadyPlacedMessage = () => {
+    // Check if the selected plant is a Daisy
+    const isDaisy = selectedPlantType === 'flower' && selectedPlantVariant === 'basic';
+    
+    // Count how many of this plant type and variant are already placed in the garden
+    const placedCount = gardenItems.filter(
+      item => item.plant_type === selectedPlantType && item.plant_variant === selectedPlantVariant
+    ).length;
+    
+    // Count how many of this plant type and variant are in inventory
+    const inventoryCount = inventoryPlants[selectedPlantType]?.[selectedPlantVariant] || 0;
+    
+    // Skip if no plants are placed
+    if (placedCount === 0) {
+      return null;
+    }
+    
+    // For Daisies, check both inventory and available flower currency
+    if (isDaisy) {
+      // Total available = inventory + flower currency
+      const totalAvailable = inventoryCount + (gardenStats?.flowers_available || 0);
+      
+      // Only show message if all available Daisies have been placed
+      if (placedCount < totalAvailable) {
+        return null;
+      }
+    } 
+    // For other plants, check if all inventory is placed
+    else if (inventoryCount > 0 && placedCount < inventoryCount) {
+      return null; // Still have plants in inventory
+    }
+    
+    // If we can buy a new basic plant (non-Daisy), no message needed
+    if (selectedPlantVariant === 'basic' && !isDaisy && canAffordPlant(selectedPlantType)) {
+      return null;
+    }
+    
+    // If we've reached this point, show the message as all available plants of this type are placed
+    const plantDetails = getPlantDetails(selectedPlantType, selectedPlantVariant);
+    
+    return (
+      <p className="text-sm text-blue-600 mb-4 text-center">
+        You've placed all your {plantDetails?.name || `${selectedPlantVariant} ${selectedPlantType}`}s. 
+        Select one and click "Return to Inventory" first to move it.
       </p>
     );
   };
@@ -1134,18 +1272,21 @@ export const Garden: React.FC<GardenProps> = ({
               {renderPlantTypeSelector()}
               <button
                 className={`w-full py-2 px-4 text-white rounded-md font-medium transition-colors mb-4 ${
-                  (canPlaceNewPlant || inventoryPlants[selectedPlantType]?.[selectedPlantVariant] > 0) && !isSharing
+                  (canPlaceSelectedPlant()) && !isSharing
                     ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-gray-400 cursor-not-allowed'
                 }`}
                 onClick={handleStartPlacing}
-                disabled={!(canPlaceNewPlant || inventoryPlants[selectedPlantType]?.[selectedPlantVariant] > 0) || isSharing}
+                disabled={!canPlaceSelectedPlant() || isSharing}
               >
                 Add to Garden
               </button>
               
               {/* Show message when no plants are available */}
               {showNoPlantMessage()}
+              
+              {/* Show message when selected plant is already placed */}
+              {showAlreadyPlacedMessage()}
               
               {renderOrnamentSelector()}
               

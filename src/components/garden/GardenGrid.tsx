@@ -23,8 +23,6 @@ export const GardenGrid: React.FC<GardenGridProps> = ({
   gardenOrnaments,
   gridSize,
   placingPlant,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  selectedPlantDetails, // Keeping this parameter to satisfy the interface but we don't use it
   onPlantClick,
   onGridCellClick,
 }) => {
