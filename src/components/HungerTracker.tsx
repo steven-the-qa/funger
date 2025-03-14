@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { supabase } from '../lib/supabase';
 import { format, differenceInSeconds } from 'date-fns';
 import { History, BarChart3, Skull, ThumbsUpIcon, Cookie } from 'lucide-react';
@@ -8,6 +8,13 @@ import TouchGrassTimer from './TouchGrassTimer';
 import Garden from './garden/Garden';
 import type { HungerRecord } from '../lib/supabase';
 import type { ChartData, ChartOptions, Point, TooltipItem } from 'chart.js';
+
+// Pre-load the chart libraries to avoid race conditions
+import 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
+
+// Use React.lazy to load the chart component
+const Line = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Line })));
 
 interface HungerTrackerProps {
   onLogout: () => Promise<void>;
@@ -335,9 +342,9 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
         '#009688', '#4caf50', '#8bc34a', '#cddc39', 
         '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
       ][Math.floor(Math.random() * 16)];
-      
+
       return (
-        <div 
+        <div
           key={i}
           className="absolute top-0 rounded"
           style={{
@@ -353,7 +360,7 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
         />
       );
     });
-    
+
     return (
       <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
         <style>
@@ -554,6 +561,8 @@ const HungerTracker: React.FC<HungerTrackerProps> = ({ onLogout }) => {
 
 const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
   const [chartData, setChartData] = useState<ChartData<'line', Point[], unknown> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   // Define Point interface matching Chart.js Point
   interface DataPoint {
@@ -561,6 +570,7 @@ const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
     y: number;
   }
 
+  // Process the data for the chart
   const processDataForChart = useCallback((records: HungerRecord[]) => {
     // Only include completed records
     const completedRecords = records
@@ -620,22 +630,28 @@ const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
     };
   }, []);
 
+  // Initialize chart data when records change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Import and register all required Chart.js components
-      Promise.all([
-        import('chart.js/auto'),
-        import('chartjs-adapter-date-fns'), // Add date adapter
-        import('react-chartjs-2')
-      ]).then(([, , ]) => {
-        // Process data for chart
-        const processedData = processDataForChart(records);
-        setChartData(processedData as ChartData<'line', Point[], unknown>);
-      });
+    try {
+      setIsLoading(true);
+      setHasError(false);
+
+      // Process the data
+      const data = processDataForChart(records);
+      setChartData(data as ChartData<'line', Point[], unknown>);
+
+      // Simulate a slight delay to ensure libraries are loaded
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 100);
+    } catch (error) {
+      console.error('Error processing chart data:', error);
+      setHasError(true);
+      setIsLoading(false);
     }
   }, [records, processDataForChart]);
 
-  // Check for empty completed records first
+  // Render based on the records and loading state
   if (records.filter(r => r.end_time).length === 0) {
     return (
       <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
@@ -646,35 +662,66 @@ const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
       </div>
     );
   }
-  
-  // Then check if chart data is still loading
-  if (!chartData) {
+
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
         <div className="text-4xl mb-3 animate-bounce">🔄</div>
         <h3 className="text-purple-600 font-medium text-lg mb-2">Cooking Up Your Chart...</h3>
         <p className="text-gray-600">We're stirring the data pot and preparing your hunger insights.</p>
         <div className="mt-4">
-          <div className="w-16 h-1 bg-purple-200 rounded-full overflow-hidden">
-            <div className="w-full h-full bg-purple-600 animate-pulse"></div>
+          <div className="w-32 h-2 bg-purple-200 rounded-full overflow-hidden">
+            <div className="h-full bg-purple-600 animate-pulse" style={{
+              width: '75%',
+              transition: 'width 0.5s ease-in-out'
+            }}></div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Using dynamic import for React components
-  const DynamicLine = React.lazy(() => 
-    import('react-chartjs-2').then(module => ({ default: module.Line }))
-  );
+  // Show error state with retry button
+  if (hasError) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
+        <div className="text-4xl mb-3">😕</div>
+        <h3 className="text-red-600 font-medium text-lg mb-2">Oops! Chart didn't load properly</h3>
+        <p className="text-gray-600">We had trouble preparing your chart. Let's try again!</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
+  // If chart data is ready but empty
+  if (!chartData) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 p-6 text-center">
+        <div className="text-4xl mb-3">📊</div>
+        <h3 className="text-purple-600 font-medium text-lg mb-2">Chart Data Ready</h3>
+        <p className="text-gray-600">We have your data, but there's not enough to display a chart yet.</p>
+      </div>
+    );
+  }
+
+  // When we're ready to render the chart
   return (
     <div>
       <h2 className="font-medium text-purple-700 mb-4">Hunger Duration Trends</h2>
       <div className="h-64">
-        <React.Suspense fallback={<div>Loading chart...</div>}>
-          <DynamicLine 
-            data={chartData as ChartData<'line', Point[], unknown>} 
+        <Suspense fallback={
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin h-8 w-8 border-4 border-purple-600 rounded-full border-t-transparent"></div>
+          </div>
+        }>
+          <Line
+            data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -713,9 +760,9 @@ const HungerGraph: React.FC<{ records: HungerRecord[] }> = ({ records }) => {
                   position: 'top',
                 }
               }
-            } as ChartOptions<'line'>} 
+            } as ChartOptions<'line'>}
           />
-        </React.Suspense>
+        </Suspense>
       </div>
     </div>
   );
