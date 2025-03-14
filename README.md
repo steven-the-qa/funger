@@ -42,10 +42,19 @@ Stay motivated with a sweet (virtual) reward system:
 ### 🌱 Touch Grass Garden
 
 Take healthy breaks from screen time:
-- Complete 30-minute "Touch Grass" sessions to earn flowers
+- Complete 30-minute "Touch Grass" sessions to earn Daisies
 - Plant and grow a variety of plants in your virtual garden
-- Upgrade from flowers to vegetables, fruits, trees, and rare plants
+- Upgrade plants from basic to rare, epic, and legendary variants
+- Place ornaments to personalize your garden space
 - Track your progress with a garden that visually represents your healthy habits
+
+### 🏆 Garden Inventory System
+
+Manage your growing collection:
+- View all owned plants in your inventory
+- Return plants to inventory to reposition them
+- Place multiple plants of the same type based on your inventory count
+- Earn special ornaments through challenges to decorate your garden
 
 ### 📱 User-Friendly Interface
 
@@ -53,47 +62,80 @@ Take healthy breaks from screen time:
 - Simple one-tap tracking
 - Secure user authentication
 - Social sharing capabilities
-
-## How to Use Funger
-
-### Hunger Tracking
-1. **Track Hunger**: Tap "I'm Hungry" when hunger strikes
-2. **End Tracking**: Tap "I'm OK Now" when you're no longer feeling hungry
-3. **Earn Cookies**: Get rewarded with virtual cookies for tracking your hunger
-4. **Review Data**: Check your history and graphs to gain insights
-
-### Cookie Jar
-1. **Beat a Craving**: Track when you're hungry and when it passes
-2. **Give Yourself a Cookie**: Earn a virtual cookie as a reward
-3. **Build Your Collection**: Accumulate different cookie types
-4. **Earn Achievements**: Unlock special badges for milestones and streaks
-5. **Share Your Progress**: Show off your cookie collection to friends
-
-### Touch Grass Garden
-1. **Start a Session**: Begin a 30-minute break from screens
-2. **Complete the Timer**: Stay away from your device for the full duration
-3. **Earn Flowers**: Get a flower for each completed session
-4. **Grow Your Garden**: Use flowers to purchase and upgrade plants
-5. **Share Your Garden**: Show off your progress to friends
+- Responsive layout for all device sizes
 
 ## Plant Collection
 
-Your garden can grow a variety of plants:
+Your garden can grow a variety of plants with four rarity levels: basic, rare, epic, and legendary.
 
-### 🌼 Flowers (Base Reward)
-- Daisy, Rose, Tulip, Sunflower
+### 🌼 Flowers
+- Daisy (Basic, earned from Touch Grass sessions)
+- Cherry Blossom (Rare)
+- Hibiscus (Epic)
+- Rose (Legendary)
 
-### 🥕 Vegetables (Cost: 5 flowers)
-- Carrot, Onion, Potato
+### 🥕 Vegetables (Cost: 5 Daisies for basic)
+- Carrot (Basic)
+- Broccoli (Rare)
+- Corn (Epic)
+- Eggplant (Legendary)
 
-### 🍓 Fruits (Cost: 10 flowers)
-- Strawberry, Kiwi, Watermelon
+### 🍎 Fruits (Cost: 10 Daisies for basic)
+- Apple (Basic)
+- Pear (Rare)
+- Strawberry (Epic)
+- Peach (Legendary)
 
-### 🌴 Trees (Cost: 15 flowers)
-- Palm Tree, Pine Tree, Deciduous Tree
+### 🌳 Trees (Cost: 15 Daisies for basic)
+- Oak Tree (Basic)
+- Pine Tree (Rare)
+- Palm Tree (Epic)
+- Festive Tree (Legendary)
 
-### 🍀 Lucky Charm (Cost: 20 flowers)
-- Four-Leaf Clover (rare special item)
+### 🍀 Lucky Charms (Cost: 20 Daisies for basic)
+- Lucky Clover (Basic)
+- Big Lucky Clover (Rare)
+- Grand Lucky Clover (Epic)
+- Legendary Lucky Clover (Legendary)
+
+## Garden Ornaments
+
+Personalize your garden with special decorative items:
+
+### Common Ornaments (50% chance)
+- Garden Rock
+- Mushroom
+
+### Uncommon Ornaments (30% chance)
+- Fountain
+- Garden Bench
+
+### Rare Ornaments (15% chance)
+- Garden Gnome
+- Pink Flamingo
+
+### Epic Ornaments (4% chance)
+- Garden Statue
+- Garden Pond
+
+### Legendary Ornaments (1% chance)
+- Golden Statue
+- Rainbow Fountain
+
+Ornaments are awarded randomly upon completing Touch Grass challenges, with rarity determined by the probability distribution above. The longer your streak of completed Touch Grass sessions, the slightly higher your chances of receiving rarer ornaments!
+
+## Tech Stack
+
+Funger is built with modern web technologies:
+
+- **Frontend**: React 18 with TypeScript
+- **UI Framework**: Tailwind CSS for responsive design
+- **Backend**: Supabase for authentication, database, and storage
+- **Charting**: Chart.js with react-chartjs-2 for data visualization
+- **Image Generation**: html2canvas for social sharing features
+- **State Management**: React Context API and custom hooks
+- **Deployment**: Netlify with continuous deployment
+- **Dev Tools**: Vite, ESLint, TypeScript
 
 ## The Science Behind Funger
 
