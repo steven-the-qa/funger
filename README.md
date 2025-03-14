@@ -6,10 +6,6 @@
 
 Funger transforms the challenging experience of dieting into a fun, rewarding journey. By gamifying hunger tracking, Funger helps you visualize progress, earn rewards, and build healthy habits while managing your calorie-restricted diet.
 
-<img width="1000" alt="Screenshot 2025-03-14 at 6 21 51 PM" src="https://github.com/user-attachments/assets/045faff2-d7b9-4d3c-948e-56ea1e92e299" />
-
-<img width="652" alt="Screenshot 2025-03-14 at 6 21 57 PM" src="https://github.com/user-attachments/assets/6bc59696-b3ad-418a-87e8-dd4ee7114fa8" />
-
 ## Why Track Your Hunger?
 
 Dieting is challenging, and hunger can be one of the most difficult aspects to manage. Funger helps you:
@@ -35,6 +31,8 @@ Funger provides helpful visualizations:
 - View a trend line showing how your hunger patterns are changing
 - See if your body is adapting to your diet plan
 
+<img width="487" alt="Screenshot 2025-03-14 at 6 23 32 PM" src="https://github.com/user-attachments/assets/9849e376-5452-4b54-99a5-826250f29add" />
+
 ### 🍪 Cookie Rewards System
 
 Stay motivated with a sweet (virtual) reward system:
@@ -42,6 +40,8 @@ Stay motivated with a sweet (virtual) reward system:
 - Build streaks by consistently tracking your hunger
 - Unlock cookie achievements for milestones
 - Share your cookie collection on social media
+
+<img width="367" alt="Screenshot 2025-03-14 at 6 23 49 PM" src="https://github.com/user-attachments/assets/77b3452e-1d9f-47f4-bdf8-b0b5d9c7dd9b" />
 
 ### 🌱 Touch Grass Garden
 
@@ -52,6 +52,8 @@ Take healthy breaks from screen time:
 - Place ornaments to personalize your garden space
 - Track your progress with a garden that visually represents your healthy habits
 
+<img width="696" alt="Screenshot 2025-03-14 at 6 24 07 PM" src="https://github.com/user-attachments/assets/5f26305b-00f5-4dc8-9bb1-c3f8d675176c" />
+
 ### 🏆 Garden Inventory System
 
 Manage your growing collection:
@@ -59,6 +61,8 @@ Manage your growing collection:
 - Return plants to inventory to reposition them
 - Place multiple plants of the same type based on your inventory count
 - Earn special ornaments through challenges to decorate your garden
+
+<img width="588" alt="Screenshot 2025-03-14 at 6 26 07 PM" src="https://github.com/user-attachments/assets/abd9272a-3169-49fe-b583-1b24dcc6bdca" />
 
 ### 📱 User-Friendly Interface
 
