@@ -6,6 +6,10 @@
 
 Funger transforms the challenging experience of dieting into a fun, rewarding journey. By gamifying hunger tracking, Funger helps you visualize progress, earn rewards, and build healthy habits while managing your calorie-restricted diet.
 
+<img width="1000" alt="Screenshot 2025-03-14 at 6 21 51 PM" src="https://github.com/user-attachments/assets/045faff2-d7b9-4d3c-948e-56ea1e92e299" />
+
+<img width="652" alt="Screenshot 2025-03-14 at 6 21 57 PM" src="https://github.com/user-attachments/assets/6bc59696-b3ad-418a-87e8-dd4ee7114fa8" />
+
 ## Why Track Your Hunger?
 
 Dieting is challenging, and hunger can be one of the most difficult aspects to manage. Funger helps you:
