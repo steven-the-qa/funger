@@ -87,6 +87,25 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
     return summary;
   };
 
+  // Helper function to properly pluralize plant names
+  const properPlural = (name: string): string => {
+    if (!name) return '';
+    
+    // Handle words ending in 'y' (e.g., Daisy → Daisies)
+    if (name.endsWith('y')) {
+      return name.slice(0, -1) + 'ies';
+    }
+    
+    // Handle words ending in 's', 'x', 'z', 'ch', 'sh' (e.g., Peach → Peaches)
+    if (name.endsWith('s') || name.endsWith('x') || name.endsWith('z') || 
+        name.endsWith('ch') || name.endsWith('sh')) {
+      return name + 'es';
+    }
+    
+    // Default case: just add 's'
+    return name + 's';
+  };
+
   // Generate the share card HTML
   const generateShareCard = () => {
     const grid = createGardenGrid();
@@ -104,7 +123,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
       Object.entries(inventorySummary).forEach(([type, count]) => {
         const emoji = getPlantEmoji(type, 'basic');
         const typeName = type.charAt(0).toUpperCase() + type.slice(1);
-        shareText += `${emoji} ${typeName}s: ${count}\n`;
+        shareText += `${emoji} ${properPlural(typeName)}: ${count}\n`;
       });
       
       shareText += "\n";
@@ -288,7 +307,7 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
           typeInfo.style.flexDirection = 'column';
           
           const typeName = document.createElement('span');
-          typeName.textContent = type.charAt(0).toUpperCase() + type.slice(1) + 's';
+          typeName.textContent = properPlural(type.charAt(0).toUpperCase() + type.slice(1));
           typeName.style.fontSize = '14px';
           typeName.style.fontWeight = 'bold';
           

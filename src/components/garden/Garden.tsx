@@ -1193,10 +1193,29 @@ export const Garden: React.FC<GardenProps> = ({
     
     return (
       <p className="text-sm text-blue-600 mb-4 text-center">
-        You've placed all your {plantDetails?.name || `${selectedPlantVariant} ${selectedPlantType}`}s. 
+        You've placed all your {properPlural(plantDetails?.name || `${selectedPlantVariant} ${selectedPlantType}`)}. 
         Select one and click "Return to Inventory" first to move it.
       </p>
     );
+  };
+
+  // Helper function to properly pluralize plant names
+  const properPlural = (name: string): string => {
+    if (!name) return '';
+    
+    // Handle words ending in 'y' (e.g., Daisy → Daisies)
+    if (name.endsWith('y')) {
+      return name.slice(0, -1) + 'ies';
+    }
+    
+    // Handle words ending in 's', 'x', 'z', 'ch', 'sh' (e.g., Peach → Peaches)
+    if (name.endsWith('s') || name.endsWith('x') || name.endsWith('z') || 
+        name.endsWith('ch') || name.endsWith('sh')) {
+      return name + 'es';
+    }
+    
+    // Default case: just add 's'
+    return name + 's';
   };
 
   // For modal support

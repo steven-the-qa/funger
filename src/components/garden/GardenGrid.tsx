@@ -31,17 +31,17 @@ export const GardenGrid: React.FC<GardenGridProps> = ({
   
   // Add garden items to the map
   gardenItems.forEach(item => {
-    occupiedPositions.set(`${item.position_x},${item.position_y}`, { 
-      type: 'plant', 
-      item 
+    occupiedPositions.set(`${item.position_x},${item.position_y}`, {
+      type: 'plant',
+      item
     });
   });
   
   // Add garden ornaments to the map
   gardenOrnaments.forEach(ornament => {
-    occupiedPositions.set(`${ornament.position_x},${ornament.position_y}`, { 
-      type: 'ornament', 
-      item: ornament 
+    occupiedPositions.set(`${ornament.position_x},${ornament.position_y}`, {
+      type: 'ornament',
+      item: ornament
     });
   });
 
@@ -94,7 +94,7 @@ export const GardenGrid: React.FC<GardenGridProps> = ({
         }
         
         cells.push(
-          <div 
+          <div
             key={posKey}
             className={cellClasses}
             onClick={() => {
@@ -133,7 +133,7 @@ export const GardenGrid: React.FC<GardenGridProps> = ({
   };
 
   return (
-    <div 
+    <div
       className="w-full grid gap-1 sm:gap-2"
       style={{
         gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
