@@ -1,6 +1,6 @@
 # Funger: Making Hunger Fun
 
-![Funger App](https://img.shields.io/badge/App-Funger-purple)
+![Funger App](https://github.com/steven-the-qa/funger)
 
 ## About Funger
 
