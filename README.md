@@ -1,6 +1,6 @@
 # Funger: Making Hunger Fun
 
-[Try Funger](https://github.com/steven-the-qa/funger)
+https://funger.netlify.app
 
 ## About Funger
 
