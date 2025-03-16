@@ -1,6 +1,6 @@
 # Funger: Making Hunger Fun
 
-![Funger App](https://github.com/steven-the-qa/funger)
+[Try Funger](https://github.com/steven-the-qa/funger)
 
 ## About Funger
 
