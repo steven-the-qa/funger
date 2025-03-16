@@ -1,6 +1,6 @@
 # Funger: Making Hunger Fun
 
-https://funger.netlify.app
+<a href="https://funger.netlify.app" rel="noopener noreferrer" target="_blank"></a>
 
 ## About Funger
 
