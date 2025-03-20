@@ -448,11 +448,30 @@ export const GardenSharing: React.FC<GardenSharingProps> = ({
 
   // Handle download
   const handleDownload = () => {
-    // Check if it's an iOS device to handle differently
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      performDownload();
+    if (!shareUrl) return;
+
+    // Check if this is a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile && navigator.share) {
+      // Use Web Share API on mobile if available - this typically gives better options
+      fetch(shareUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'my-funger-garden.png', { type: 'image/png' });
+
+          navigator.share({
+            files: [file],
+            title: 'Funger - Garden',
+            text: '30 minutes of fresh air = 1 fake flower 🌱 funger.netlify.app'
+          }).catch(error => {
+            console.error('Error sharing:', error);
+            // Fall back to traditional download if sharing fails
+            performDownload();
+          });
+        });
     } else {
-      // For all other devices
+      // For desktop or if Web Share API isn't available
       performDownload();
     }
   };
